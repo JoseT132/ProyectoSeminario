@@ -1,6 +1,7 @@
 package com.example.proyectoseminario.repository
 
 import com.example.proyectoseminario.data.local.AppDao
+import com.example.proyectoseminario.data.local.Ejercicio
 import com.example.proyectoseminario.data.local.NodoCamino
 import com.example.proyectoseminario.data.local.PerfilUsuario
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +12,10 @@ class MapaRepository(private val appDao: AppDao) {
     fun getTodosLosNodos(): Flow<List<NodoCamino>> = appDao.getTodosLosNodos()
 
     fun getPerfil(): Flow<PerfilUsuario?> = appDao.getPerfil()
+
+    suspend fun obtenerEjercicioPorNodo(nodoId: Int): Ejercicio? {
+        return appDao.getEjerciciosPorNodo(nodoId).firstOrNull()
+    }
 
     suspend fun completarNodoYDesbloquearSiguiente(nodoActualId: Int, puntosGanados: Int = 10) {
         val nodos = appDao.getTodosLosNodos().firstOrNull() ?: return

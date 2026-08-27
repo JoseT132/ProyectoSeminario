@@ -25,7 +25,6 @@ import com.example.proyectoseminario.data.local.AppDatabase
 import com.example.proyectoseminario.repository.MapaRepository
 import com.example.proyectoseminario.ui.ejercicio.EjercicioScreen
 import com.example.proyectoseminario.ui.ejercicio.EjercicioViewModel
-import com.example.proyectoseminario.ui.ejercicio.EjercicioViewModelFactory
 import com.example.proyectoseminario.ui.mapa.MapaScreen
 import com.example.proyectoseminario.ui.mapa.MapaViewModel
 import com.example.proyectoseminario.ui.theme.ProyectoSeminarioTheme
@@ -75,20 +74,26 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val nodoId = backStackEntry.arguments?.getInt("nodoId") ?: 1
 
+                            val ejercicioViewModelFactory = object : ViewModelProvider.Factory {
+                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                    @Suppress("UNCHECKED_CAST")
+                                    return EjercicioViewModel(repository) as T
+                                }
+                            }
+
                             val ejercicioViewModel: EjercicioViewModel = viewModel(
-                                factory = EjercicioViewModelFactory(appDao)
+                                factory = ejercicioViewModelFactory
                             )
 
                             val ejercicio by ejercicioViewModel.ejercicioActual.collectAsState()
-                            val cargando by ejercicioViewModel.cargando.collectAsState()
 
                             LaunchedEffect(nodoId) {
-                                ejercicioViewModel.cargarEjercicioPorNodo(nodoId)
+                                ejercicioViewModel.cargarEjercicio(nodoId)
                             }
 
                             EjercicioScreen(
                                 ejercicio = ejercicio,
-                                cargando = cargando,
+                                cargando = (ejercicio == null), // <--- Agregamos este parámetro que faltaba
                                 onSiguienteEjercicio = {
                                     mapaViewModel.finalizarNivelCorrecto(nodoId)
                                     navController.popBackStack()
