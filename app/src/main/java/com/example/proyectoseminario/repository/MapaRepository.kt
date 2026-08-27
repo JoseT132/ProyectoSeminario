@@ -13,29 +13,37 @@ class MapaRepository(private val appDao: AppDao) {
     fun getPerfil(): Flow<PerfilUsuario?> = appDao.getPerfil()
 
     suspend fun completarNodoYDesbloquearSiguiente(nodoActualId: Int, puntosGanados: Int = 10) {
-        // 1. Obtener la lista actual de nodos
         val nodos = appDao.getTodosLosNodos().firstOrNull() ?: return
+        val nodoActual = nodos.find { it.id == nodoActualId } ?: return
 
-        // 2. Marcar el nodo actual como completado
-        val nodoActual = nodos.find { it.id == nodoActualId }
-        nodoActual?.let {
-            appDao.updateNodo(it.copy(estaCompletado = true))
-        }
+        // Validación: si el nodo ya fue completado previamente, no vuelve a sumar puntos
+        val yaEstabaCompletado = nodoActual.estaCompletado
 
-        // 3. Desbloquear el siguiente nodo en la ruta (si existe)
-        val siguienteNodo = nodos.find { it.nodoPrerrequisitoId == nodoActualId }
-        siguienteNodo?.let {
-            appDao.updateNodo(it.copy(estaDesbloqueado = true))
-        }
+        if (!yaEstabaCompletado) {
+            // 1. Marcar el nodo actual como completado
+            appDao.updateNodo(nodoActual.copy(estaCompletado = true))
 
-        // 4. Actualizar puntaje del perfil
-        val perfilActual = appDao.getPerfil().firstOrNull()
-        if (perfilActual != null) {
-            val perfilActualizado = perfilActual.copy(puntos = perfilActual.puntos + puntosGanados)
-            appDao.updatePerfil(perfilActualizado)
-        } else {
-            // Si no existe perfil inicial, lo creamos con los puntos
-            appDao.insertPerfil(PerfilUsuario(id = 1, nombre = "Estudiante", rachaDias = 1, puntos = puntosGanados))
+            // 2. Desbloquear el siguiente nodo en la ruta
+            val siguienteNodo = nodos.find { it.nodoPrerrequisitoId == nodoActualId }
+            siguienteNodo?.let {
+                appDao.updateNodo(it.copy(estaDesbloqueado = true))
+            }
+
+            // 3. Sumar puntos solo la primera vez que se resuelve
+            val perfilActual = appDao.getPerfil().firstOrNull()
+            if (perfilActual != null) {
+                val perfilActualizado = perfilActual.copy(puntos = perfilActual.puntos + puntosGanados)
+                appDao.updatePerfil(perfilActualizado)
+            } else {
+                appDao.insertPerfil(
+                    PerfilUsuario(
+                        id = 1,
+                        nombre = "Estudiante",
+                        rachaDias = 1,
+                        puntos = puntosGanados
+                    )
+                )
+            }
         }
     }
 }
