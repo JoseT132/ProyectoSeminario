@@ -92,8 +92,8 @@ class MainActivity : ComponentActivity() {
                             }
 
                             EjercicioScreen(
-                                ejercicio = ejercicio,
-                                cargando = (ejercicio == null), // <--- Agregamos este parámetro que faltaba
+                                viewModel = ejercicioViewModel,
+                                cargando = (ejercicio == null),
                                 onSiguienteEjercicio = {
                                     mapaViewModel.finalizarNivelCorrecto(nodoId)
                                     navController.popBackStack()

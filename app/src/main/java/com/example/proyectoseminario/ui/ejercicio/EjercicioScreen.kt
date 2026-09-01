@@ -13,18 +13,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.proyectoseminario.data.local.Ejercicio
 
-enum class EstadoRespuesta {
-    NINGUNO,
-    CORRECTO,
-    INCORRECTO
-}
-
 @Composable
 fun EjercicioScreen(
-    ejercicio: Ejercicio?,
+    viewModel: EjercicioViewModel,
     cargando: Boolean,
     onSiguienteEjercicio: () -> Unit = {}
 ) {
+    val ejercicio by viewModel.ejercicioActual.collectAsState()
+    val opcionSeleccionadaIndex by viewModel.opcionSeleccionada.collectAsState()
+    val esCorrecto by viewModel.esCorrecto.collectAsState()
+
+    var mostrarExplicacion by remember(ejercicio?.id) { mutableStateOf(false) }
+
     if (cargando) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -35,7 +35,8 @@ fun EjercicioScreen(
         return
     }
 
-    if (ejercicio == null) {
+    val ejercicioActual = ejercicio
+    if (ejercicioActual == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -45,20 +46,12 @@ fun EjercicioScreen(
         return
     }
 
-    // Convertimos las opciones individuales en una lista ordenada
     val opciones = listOf(
-        ejercicio.opcionA,
-        ejercicio.opcionB,
-        ejercicio.opcionC,
-        ejercicio.opcionD
+        ejercicioActual.opcionA,
+        ejercicioActual.opcionB,
+        ejercicioActual.opcionC,
+        ejercicioActual.opcionD
     )
-
-    // Obtenemos el texto de la respuesta correcta basándonos en el índice (0, 1, 2, 3)
-    val textoRespuestaCorrecta = opciones.getOrElse(ejercicio.respuestaCorrecta) { "" }
-
-    var opcionSeleccionada by remember(ejercicio.id) { mutableStateOf("") }
-    var estadoRespuesta by remember(ejercicio.id) { mutableStateOf(EstadoRespuesta.NINGUNO) }
-    var mostrarExplicacion by remember(ejercicio.id) { mutableStateOf(false) }
 
     Scaffold { paddingValues ->
         Column(
@@ -74,24 +67,25 @@ fun EjercicioScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = ejercicio.enunciado,
+                    text = ejercicioActual.enunciado,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
 
-                opciones.forEach { opcion ->
+                opciones.forEachIndexed { index, opcion ->
                     OutlinedButton(
                         onClick = {
-                            opcionSeleccionada = opcion
-                            estadoRespuesta = EstadoRespuesta.NINGUNO
-                            mostrarExplicacion = false
+                            if (esCorrecto == null) {
+                                viewModel.seleccionarOpcion(index)
+                                mostrarExplicacion = false
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (opcionSeleccionada == opcion)
+                            containerColor = if (opcionSeleccionadaIndex == index)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
                                 Color.Transparent
@@ -109,7 +103,7 @@ fun EjercicioScreen(
             // --- Sección Inferior: Banners y Botón de Acción ---
             Column {
                 // Banner Verde (Correcto)
-                AnimatedVisibility(visible = estadoRespuesta == EstadoRespuesta.CORRECTO) {
+                AnimatedVisibility(visible = esCorrecto == true) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -134,7 +128,7 @@ fun EjercicioScreen(
                 }
 
                 // Banner Rojo (Incorrecto con Desplegable)
-                AnimatedVisibility(visible = estadoRespuesta == EstadoRespuesta.INCORRECTO) {
+                AnimatedVisibility(visible = esCorrecto == false) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -169,7 +163,7 @@ fun EjercicioScreen(
 
                             if (mostrarExplicacion) {
                                 Text(
-                                    text = ejercicio.explicacion,
+                                    text = ejercicioActual.explicacion,
                                     color = Color.White,
                                     fontSize = 13.sp,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -182,26 +176,24 @@ fun EjercicioScreen(
                 // Botón Comprobar / Continuar
                 Button(
                     onClick = {
-                        if (estadoRespuesta == EstadoRespuesta.NINGUNO) {
-                            if (opcionSeleccionada == textoRespuestaCorrecta) {
-                                estadoRespuesta = EstadoRespuesta.CORRECTO
-                            } else {
-                                estadoRespuesta = EstadoRespuesta.INCORRECTO
-                            }
+                        if (esCorrecto == null) {
+                            viewModel.verificarRespuesta()
                         } else {
-                            estadoRespuesta = EstadoRespuesta.NINGUNO
-                            opcionSeleccionada = ""
+                            val fueRespuestaCorrecta = esCorrecto == true
+                            viewModel.reiniciarEstado()
                             mostrarExplicacion = false
-                            onSiguienteEjercicio()
+                            if (fueRespuestaCorrecta) {
+                                onSiguienteEjercicio()
+                            }
                         }
                     },
-                    enabled = opcionSeleccionada.isNotEmpty(),
+                    enabled = opcionSeleccionadaIndex != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
                 ) {
                     Text(
-                        text = if (estadoRespuesta == EstadoRespuesta.NINGUNO) "Comprobar" else "Continuar",
+                        text = if (esCorrecto == null) "Comprobar" else "Continuar",
                         fontSize = 16.sp
                     )
                 }
