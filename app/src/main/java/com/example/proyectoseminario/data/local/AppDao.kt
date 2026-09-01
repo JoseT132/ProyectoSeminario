@@ -40,4 +40,10 @@ interface AppDao {
     // Registro Respuestas
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRegistroRespuesta(registro: RegistroRespuesta)
+
+    @Query("SELECT COUNT(*) FROM registro_respuestas")
+    fun getTotalRespuestas(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM registro_respuestas WHERE esCorrecto = 1")
+    fun getTotalRespuestasCorrectas(): Flow<Int>
 }
