@@ -36,8 +36,17 @@ class EjercicioViewModel(
         val ejercicio = _ejercicioActual.value ?: return
         val seleccion = _opcionSeleccionada.value ?: return
 
-        // Compara el índice Int seleccionado contra el Int de respuestaCorrecta
-        _esCorrecto.value = (seleccion == ejercicio.respuestaCorrecta)
+        val resultado = (seleccion == ejercicio.respuestaCorrecta)
+        _esCorrecto.value = resultado
+
+        // Guardar interacción en la base de datos
+        viewModelScope.launch {
+            mapaRepository.guardarRespuesta(
+                nodoId = ejercicio.nodoId,
+                ejercicioId = ejercicio.id,
+                esCorrecto = resultado
+            )
+        }
     }
 
     fun reiniciarEstado() {
