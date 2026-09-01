@@ -153,8 +153,7 @@ class MainActivity : ComponentActivity() {
                                 )
 
                                 PerfilScreen(
-                                    viewModel = perfilViewModel,
-                                    onVolver = { navController.popBackStack() }
+                                    viewModel = perfilViewModel
                                 )
                             }
                         }

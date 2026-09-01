@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Star
@@ -19,7 +18,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,8 +35,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilScreen(
-    viewModel: PerfilViewModel,
-    onVolver: () -> Unit
+    viewModel: PerfilViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val perfil = uiState.perfil
@@ -46,15 +43,7 @@ fun PerfilScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mi Perfil y Estadísticas") },
-                navigationIcon = {
-                    IconButton(onClick = onVolver) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver al Mapa"
-                        )
-                    }
-                }
+                title = { Text("Mi Perfil y Estadísticas") }
             )
         }
     ) { innerPadding ->
