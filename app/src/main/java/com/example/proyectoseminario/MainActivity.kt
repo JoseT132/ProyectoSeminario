@@ -27,6 +27,9 @@ import com.example.proyectoseminario.ui.ejercicio.EjercicioScreen
 import com.example.proyectoseminario.ui.ejercicio.EjercicioViewModel
 import com.example.proyectoseminario.ui.mapa.MapaScreen
 import com.example.proyectoseminario.ui.mapa.MapaViewModel
+import com.example.proyectoseminario.ui.perfil.PerfilScreen
+import com.example.proyectoseminario.ui.perfil.PerfilViewModel
+import com.example.proyectoseminario.ui.perfil.PerfilViewModelFactory
 import com.example.proyectoseminario.ui.theme.ProyectoSeminarioTheme
 
 class MainActivity : ComponentActivity() {
@@ -98,6 +101,18 @@ class MainActivity : ComponentActivity() {
                                     mapaViewModel.finalizarNivelCorrecto(nodoId)
                                     navController.popBackStack()
                                 }
+                            )
+                        }
+
+                        // Nueva ruta de Perfil
+                        composable("perfil") {
+                            val perfilViewModel: PerfilViewModel = viewModel(
+                                factory = PerfilViewModelFactory(repository)
+                            )
+
+                            PerfilScreen(
+                                viewModel = perfilViewModel,
+                                onVolver = { navController.popBackStack() }
                             )
                         }
                     }
