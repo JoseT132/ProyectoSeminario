@@ -14,6 +14,10 @@ class MapaRepository(private val appDao: AppDao) {
 
     fun getPerfil(): Flow<PerfilUsuario?> = appDao.getPerfil()
 
+    fun getTotalRespuestas(): Flow<Int> = appDao.getTotalRespuestas()
+
+    fun getTotalRespuestasCorrectas(): Flow<Int> = appDao.getTotalRespuestasCorrectas()
+
     suspend fun obtenerEjercicioPorNodo(nodoId: Int): Ejercicio? {
         val listaEjercicios = appDao.getEjerciciosPorNodo(nodoId).firstOrNull()
         return listaEjercicios?.firstOrNull()
@@ -33,20 +37,16 @@ class MapaRepository(private val appDao: AppDao) {
         val nodos = appDao.getTodosLosNodos().firstOrNull() ?: return
         val nodoActual = nodos.find { it.id == nodoActualId } ?: return
 
-        // Validación: si el nodo ya fue completado previamente, no vuelve a sumar puntos
         val yaEstabaCompletado = nodoActual.estaCompletado
 
         if (!yaEstabaCompletado) {
-            // 1. Marcar el nodo actual como completado
             appDao.updateNodo(nodoActual.copy(estaCompletado = true))
 
-            // 2. Desbloquear el siguiente nodo en la ruta
             val siguienteNodo = nodos.find { it.nodoPrerrequisitoId == nodoActualId }
             siguienteNodo?.let {
                 appDao.updateNodo(it.copy(estaDesbloqueado = true))
             }
 
-            // 3. Sumar puntos solo la primera vez que se resuelve
             val perfilActual = appDao.getPerfil().firstOrNull()
             if (perfilActual != null) {
                 val perfilActualizado = perfilActual.copy(puntos = perfilActual.puntos + puntosGanados)
