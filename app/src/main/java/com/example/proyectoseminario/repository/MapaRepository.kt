@@ -4,6 +4,7 @@ import com.example.proyectoseminario.data.local.AppDao
 import com.example.proyectoseminario.data.local.Ejercicio
 import com.example.proyectoseminario.data.local.NodoCamino
 import com.example.proyectoseminario.data.local.PerfilUsuario
+import com.example.proyectoseminario.data.local.RegistroRespuesta
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -14,7 +15,18 @@ class MapaRepository(private val appDao: AppDao) {
     fun getPerfil(): Flow<PerfilUsuario?> = appDao.getPerfil()
 
     suspend fun obtenerEjercicioPorNodo(nodoId: Int): Ejercicio? {
-        return appDao.getEjerciciosPorNodo(nodoId).firstOrNull()
+        val listaEjercicios = appDao.getEjerciciosPorNodo(nodoId).firstOrNull()
+        return listaEjercicios?.firstOrNull()
+    }
+
+    suspend fun guardarRespuesta(nodoId: Int, ejercicioId: Int, esCorrecto: Boolean, tiempoSegundos: Int = 0) {
+        val registro = RegistroRespuesta(
+            nodoId = nodoId,
+            ejercicioId = ejercicioId,
+            esCorrecto = esCorrecto,
+            tiempoSegundos = tiempoSegundos
+        )
+        appDao.insertRegistroRespuesta(registro)
     }
 
     suspend fun completarNodoYDesbloquearSiguiente(nodoActualId: Int, puntosGanados: Int = 10) {
