@@ -1,39 +1,19 @@
 package com.example.proyectoseminario.ui.perfil
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,134 +21,127 @@ fun PerfilScreen(
     viewModel: PerfilViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val perfil = uiState.perfil
-    val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mi Perfil y Estadísticas") }
+                title = { Text("Mi Perfil") }
             )
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = perfil?.nombre ?: "Estudiante",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Progreso del Semestre",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Cuadrícula de Métricas
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) { paddingValues ->
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Cabecera del Perfil (Nombre y Puntos)
+                Card(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    TarjetaMetrica(
-                        titulo = "Puntos Total",
-                        valor = "${perfil?.puntos ?: 0}",
-                        icono = Icons.Default.Star,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TarjetaMetrica(
-                        titulo = "Racha Días",
-                        valor = "${perfil?.rachaDias ?: 0}",
-                        icono = Icons.Default.DateRange,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Avatar de Usuario",
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = uiState.perfil?.nombre ?: "Estudiante",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Puntos: ${uiState.perfil?.puntos ?: 0} XP",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "Racha actual: ${uiState.perfil?.rachaDias ?: 0} días",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
                 }
 
+                // Progreso general del camino
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Progreso del Camino",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        val progreso = if (uiState.totalNodos > 0) {
+                            uiState.nodosCompletados.toFloat() / uiState.totalNodos.toFloat()
+                        } else 0f
+
+                        LinearProgressIndicator(
+                            progress = { progreso },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                        )
+                        Text(
+                            text = "${uiState.nodosCompletados} de ${uiState.totalNodos} temas completados",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                // Resumen de Estadísticas
+                Text(
+                    text = "Estadísticas Generales",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TarjetaMetrica(
-                        titulo = "Ejercicios",
-                        valor = "${uiState.totalRespondidas}",
-                        icono = Icons.Default.CheckCircle,
+                        titulo = "Respondidas",
+                        valor = "${uiState.totalRespuestas}",
+                        modifier = Modifier.weight(1f)
+                    )
+                    TarjetaMetrica(
+                        titulo = "Correctas",
+                        valor = "${uiState.totalCorrectas}",
                         modifier = Modifier.weight(1f)
                     )
                     TarjetaMetrica(
                         titulo = "Precisión",
                         valor = "${uiState.precisionPorcentaje}%",
-                        icono = Icons.Default.ThumbUp,
                         modifier = Modifier.weight(1f)
                     )
                 }
+
+                // Sección de Logros e Insignias
+                SeccionLogros(logros = uiState.logros)
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Sección de Dominio por Tema
-            Text(
-                text = "Nivel de Dominio por Tema",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Barra de Dominio de Álgebra (Calculada dinámicamente según la precisión)
-            ItemDominioTema(
-                tema = "Álgebra",
-                porcentaje = uiState.precisionPorcentaje / 100f,
-                porcentajeTexto = "${uiState.precisionPorcentaje}%"
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            ItemDominioTema(
-                tema = "Aritmética y Funciones",
-                porcentaje = 0.3f,
-                porcentajeTexto = "30%"
-            )
-        }
-    }
-}
-
-@Composable
-fun ItemDominioTema(
-    tema: String,
-    porcentaje: Float,
-    porcentajeTexto: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = tema, fontWeight = FontWeight.SemiBold)
-                Text(text = porcentajeTexto, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { porcentaje.coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-            )
         }
     }
 }
@@ -177,36 +150,77 @@ fun ItemDominioTema(
 fun TarjetaMetrica(
     titulo: String,
     valor: String,
-    icono: ImageVector,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.Start
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icono,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = valor,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
             Text(
                 text = titulo,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelMedium
             )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = valor,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun SeccionLogros(logros: List<Logro>) {
+    Text(
+        text = "Logros e Insignias",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        logros.forEach { logro ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (logro.desbloqueado)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = logro.icono,
+                        contentDescription = logro.titulo,
+                        tint = if (logro.desbloqueado)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            Color.Gray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = logro.titulo,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = logro.descripcion,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
         }
     }
 }
