@@ -2,7 +2,9 @@ package com.example.proyectoseminario.ui.ejercicio
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
 
 @Composable
 fun EjercicioScreen(
@@ -61,9 +62,11 @@ fun EjercicioScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // --- Sección Superior: Pregunta y Opciones ---
+            // --- Sección Superior: Pregunta y Opciones (Con Scroll) ---
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
@@ -74,6 +77,20 @@ fun EjercicioScreen(
                 )
 
                 opciones.forEachIndexed { index, opcion ->
+                    // Definición dinámica de colores según el estado de la verificación
+                    val containerColor = when {
+                        esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFFC8E6C9) // Verde claro para la correcta
+                        esCorrecto == false && index == opcionSeleccionadaIndex -> Color(0xFFFFCDD2) // Rojo claro para la incorrecta seleccionada
+                        opcionSeleccionadaIndex == index -> MaterialTheme.colorScheme.primaryContainer // Selección normal
+                        else -> Color.Transparent
+                    }
+
+                    val contentColor = when {
+                        esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFF1B5E20)
+                        esCorrecto == false && index == opcionSeleccionadaIndex -> Color(0xFFB71C1C)
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+
                     OutlinedButton(
                         onClick = {
                             if (esCorrecto == null) {
@@ -85,10 +102,8 @@ fun EjercicioScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (opcionSeleccionadaIndex == index)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else
-                                Color.Transparent
+                            containerColor = containerColor,
+                            contentColor = contentColor
                         )
                     ) {
                         Text(
