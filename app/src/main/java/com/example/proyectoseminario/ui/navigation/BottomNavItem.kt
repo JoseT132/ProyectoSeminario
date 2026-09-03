@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class BottomNavItem(
@@ -14,4 +15,5 @@ sealed class BottomNavItem(
     object Mapa : BottomNavItem("mapa", "Mapa", Icons.Default.Home)
     object Logros : BottomNavItem("logros", "Logros", Icons.Default.Star)
     object Perfil : BottomNavItem("perfil", "Perfil", Icons.Default.Person)
+    object Ajustes : BottomNavItem("ajustes", "Ajustes", Icons.Default.Settings)
 }

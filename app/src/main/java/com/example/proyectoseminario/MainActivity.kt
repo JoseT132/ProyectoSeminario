@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -53,6 +54,7 @@ import com.example.proyectoseminario.ui.logros.LogrosScreen
 import com.example.proyectoseminario.ui.mapa.MapaScreen
 import com.example.proyectoseminario.ui.mapa.MapaViewModel
 import com.example.proyectoseminario.ui.onboarding.OnboardingScreen
+import com.example.proyectoseminario.ui.ajustes.AjustesScreen
 import com.example.proyectoseminario.ui.navigation.BottomNavItem
 import com.example.proyectoseminario.ui.perfil.PerfilScreen
 import com.example.proyectoseminario.ui.perfil.PerfilViewModel
@@ -83,7 +85,9 @@ class MainActivity : ComponentActivity() {
         val registroViewModel = viewModelConFactory { RegistroViewModel(authRepository, sessionManager) }
 
         setContent {
-            ProyectoSeminarioTheme {
+            val isSystemDark = isSystemInDarkTheme()
+            var darkTheme by remember { mutableStateOf(isSystemDark) }
+            ProyectoSeminarioTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -110,7 +114,10 @@ class MainActivity : ComponentActivity() {
                             registroViewModel = registroViewModel,
                             mapaRepository = mapaRepository,
                             sessionManager = sessionManager,
-                            context = this@MainActivity
+                            authRepository = authRepository,
+                            context = this@MainActivity,
+                            isDarkTheme = darkTheme,
+                            onDarkThemeChange = { darkTheme = it }
                         )
                     }
                 }
@@ -136,10 +143,13 @@ private fun AppNavigation(
     registroViewModel: RegistroViewModel,
     mapaRepository: MapaRepository,
     sessionManager: SessionManager,
-    context: android.content.Context
+    authRepository: AuthRepository,
+    context: android.content.Context,
+    isDarkTheme: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit
 ) {
     val navController = rememberNavController()
-    val navItems = listOf(BottomNavItem.Mapa, BottomNavItem.Logros, BottomNavItem.Perfil)
+    val navItems = listOf(BottomNavItem.Mapa, BottomNavItem.Logros, BottomNavItem.Perfil, BottomNavItem.Ajustes)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState(initial = false)
@@ -149,7 +159,8 @@ private fun AppNavigation(
     val mostrarBottomBar = currentRoute in listOf(
         BottomNavItem.Mapa.route,
         BottomNavItem.Logros.route,
-        BottomNavItem.Perfil.route
+        BottomNavItem.Perfil.route,
+        BottomNavItem.Ajustes.route
     )
 
     Scaffold(
@@ -281,6 +292,25 @@ private fun AppNavigation(
                 PerfilScreen(
                     viewModel = perfilViewModel,
                     onLogout = {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(BottomNavItem.Ajustes.route) {
+                AjustesScreen(
+                    sessionManager = sessionManager,
+                    authRepository = authRepository,
+                    isDarkTheme = isDarkTheme,
+                    onDarkThemeChange = onDarkThemeChange,
+                    onLogout = {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onAccountDeleted = {
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }

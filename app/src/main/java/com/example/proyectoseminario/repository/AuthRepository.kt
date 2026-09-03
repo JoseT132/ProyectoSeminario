@@ -54,4 +54,8 @@ class AuthRepository(private val appDao: AppDao) {
     suspend fun perfilExiste(correo: String): Boolean {
         return appDao.existeCorreo(correo) > 0
     }
+
+    suspend fun eliminarCuenta(id: Int) {
+        appDao.deletePerfil(id)
+    }
 }
