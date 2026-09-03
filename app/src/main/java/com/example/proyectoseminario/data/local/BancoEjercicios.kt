@@ -128,20 +128,19 @@ object BancoEjercicios {
                 val c = a * x - b
                 val enunciado = "Resuelve: ${a}x - $b = $c"
                 val correcta = "x = $x"
-                val distractores = listOf("x = ${x + 1}", "x = ${x - 2}", "x = ${(c + b) / a}")
+                val distractores = listOf("x = ${x + 1}", "x = ${x - 2}", "x = ${c / a}")
                 val explicacion = "Sumamos $b y dividimos entre $a: x = ($c + $b) / $a = $x."
                 crearEjercicio(id, nodoId, enunciado, correcta, distractores, explicacion, d)
             }
             in 11..15 -> {
                 val a = 2
-                val b = d
-                val c = 3
                 val x = d - 2
-                val ladoDerecho = a * x + b
-                val enunciado = "Resuelve: ${a}x + $b = ${c}x + ${ladoDerecho - c * x}"
+                val b = d
+                val c = a * x + b
+                val enunciado = "Resuelve: ${2}x + $b = $c"
                 val correcta = "x = $x"
-                val distractores = listOf("x = ${x + 1}", "x = ${x - 1}", "x = $c")
-                val explicacion = "Pasamos términos: 2x - 3x = ${ladoDerecho - c * x} - $b, entonces x = $x."
+                val distractores = listOf("x = ${x + 1}", "x = ${x - 1}", "x = ${c - b}")
+                val explicacion = "Restamos $b y dividimos entre $a: x = ($c - $b) / $a = $x."
                 crearEjercicio(id, nodoId, enunciado, correcta, distractores, explicacion, d)
             }
             else -> {
@@ -149,11 +148,11 @@ object BancoEjercicios {
                 val numerador = d * 2
                 val x = d - 8
                 val denominador = 2
-                val c = numerador + (a * x) / denominador
+                val c = (a * x + numerador) / denominador
                 val enunciado = "Resuelve: ($a x + $numerador) / $denominador = $c"
                 val correcta = "x = $x"
                 val distractores = listOf("x = ${x + 1}", "x = ${x - 1}", "x = ${c * denominador - numerador}")
-                val explicacion = "Multiplicamos por $denominador: $a x + $numerador = ${c * denominador}, luego x = $x."
+                val explicacion = "Multiplicamos por $denominador: $a x + $numerador = ${c * denominador}. Restamos $numerador: $a x = ${c * denominador - numerador}. Dividimos entre $a: x = $x."
                 crearEjercicio(id, nodoId, enunciado, correcta, distractores, explicacion, d)
             }
         }
@@ -199,7 +198,7 @@ object BancoEjercicios {
                 val c = d - 8
                 val enunciado = "Resuelve: ${a}x² + ${b}x + $c = 0 (usa fórmula general)"
                 val discriminante = b * b - 4 * a * c
-                val correcta = if (discriminante >= 0) "x = ${-b} ± √$discriminante / ${2 * a}" else "sin solución real"
+                val correcta = if (discriminante >= 0) "x = (${-b} ± √$discriminante) / ${2 * a}" else "sin solución real"
                 val distractores = listOf("x = $b ± √$discriminante", "x = ${-b} / ${2 * a}", "x = 1, x = $c")
                 val explicacion = "x = (-$b ± √$discriminante) / ${2 * a}."
                 crearEjercicio(id, nodoId, enunciado, correcta, distractores, explicacion, d)
@@ -226,7 +225,7 @@ object BancoEjercicios {
                 val enunciado = "Derivada de f(x) = x^$n"
                 val correcta = "${n}x^${n - 1}"
                 val distractores = listOf("x^${n - 1}", "${n - 1}x^$n", "x^$n")
-                val explicacion = "Aplicamos d/dx(xx(xⁿ) = n xⁿ⁻¹: $n x^${n - 1}."
+                val explicacion = "Aplicamos d/dx(xⁿ) = n·xⁿ⁻¹: $n x^${n - 1}."
                 crearEjercicio(id, nodoId, enunciado, correcta, distractores, explicacion, d)
             }
             in 11..15 -> {
