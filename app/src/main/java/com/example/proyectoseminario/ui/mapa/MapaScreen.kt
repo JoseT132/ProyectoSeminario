@@ -1,5 +1,6 @@
 package com.example.proyectoseminario.ui.mapa
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,7 +40,8 @@ val ColorVerdeVictoria = Color(0xFF2E7D32)
 @Composable
 fun MapaScreen(
     viewModel: MapaViewModel,
-    onNodoClick: (Int) -> Unit
+    onNodoClick: (Int) -> Unit,
+    onExamenClick: () -> Unit = {}
 ) {
     val nodos by viewModel.nodos.collectAsState()
     val perfil by viewModel.perfil.collectAsState()
@@ -56,6 +60,17 @@ fun MapaScreen(
                     )
                 },
                 actions = {
+                    TextButton(
+                        onClick = onExamenClick,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text(
+                            text = "Examen",
+                            color = ColorOro,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -90,7 +105,11 @@ fun MapaScreen(
             ) {
                 // Cabecera del Curso Actual
                 item {
-                    EncabezadoCurso(tituloCurso = "Módulo I: Ecuaciones Cuadráticas")
+                    val primerNodoId = nodos.firstOrNull { it.estaDesbloqueado }?.id ?: 1
+                    EncabezadoCurso(
+                        tituloCurso = "Módulo I: Ecuaciones Cuadráticas",
+                        onClick = { onNodoClick(primerNodoId) }
+                    )
                 }
 
                 itemsIndexed(items = nodos, key = { _, nodo -> nodo.id }) { index, nodo ->
@@ -116,25 +135,69 @@ fun MapaScreen(
 }
 
 @Composable
-fun EncabezadoCurso(tituloCurso: String) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = ColorMaderaOscura),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+fun EncabezadoCurso(tituloCurso: String, onClick: () -> Unit) {
+    val numero = tituloCurso.substringBefore(":")
+    val subtitulo = tituloCurso.substringAfter(":").trim()
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(vertical = 12.dp)
     ) {
-        Box(
+        Surface(
+            shape = CircleShape,
+            color = ColorMaderaOscura,
+            shadowElevation = 12.dp,
+            border = BorderStroke(4.dp, ColorOro),
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
+                .size(120.dp)
+                .clickable(onClick = onClick)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.15f),
+                                Color.Transparent
+                            ),
+                            radius = 0.6f,
+                            center = Offset(0.3f, 0.3f)
+                        ),
+                        shape = CircleShape
+                    )
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = numero,
+                        color = ColorOro,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = ColorOro,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Surface(
+            color = ColorMaderaOscura,
+            shape = RoundedCornerShape(8.dp),
+            shadowElevation = 4.dp
         ) {
             Text(
-                text = tituloCurso,
+                text = subtitulo,
                 color = ColorOro,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
     }
@@ -166,19 +229,35 @@ fun NodoMedievalItem(
             .offset(x = offsetX)
             .padding(vertical = 8.dp)
     ) {
-        // Escudo / Botón del Nivel Medieval
-        Box(
-            contentAlignment = Alignment.Center,
+        // Ficha 3D del Nivel
+        Surface(
+            shape = CircleShape,
+            color = backgroundColor,
+            shadowElevation = 10.dp,
+            border = BorderStroke(4.dp, borderColor),
             modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .background(backgroundColor)
-                .border(4.dp, borderColor, CircleShape)
+                .size(80.dp)
                 .clickable(enabled = nodo.estaDesbloqueado) {
                     onNodoClick(nodo.id)
                 }
         ) {
-            when {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.2f),
+                                Color.Transparent
+                            ),
+                            radius = 0.5f,
+                            center = Offset(0.3f, 0.3f)
+                        ),
+                        shape = CircleShape
+                    )
+            ) {
+                when {
                 nodo.estaCompletado -> Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Completado",
@@ -198,6 +277,7 @@ fun NodoMedievalItem(
                     modifier = Modifier.size(30.dp)
                 )
             }
+        }
         }
 
         Spacer(modifier = Modifier.height(6.dp))

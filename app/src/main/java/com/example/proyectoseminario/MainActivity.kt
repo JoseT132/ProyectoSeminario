@@ -41,6 +41,9 @@ import com.example.proyectoseminario.ui.auth.RegistroScreen
 import com.example.proyectoseminario.ui.auth.RegistroViewModel
 import com.example.proyectoseminario.ui.ejercicio.EjercicioScreen
 import com.example.proyectoseminario.ui.ejercicio.EjercicioViewModel
+import com.example.proyectoseminario.ui.examen.ExamenScreen
+import com.example.proyectoseminario.ui.examen.ExamenViewModel
+import com.example.proyectoseminario.ui.logros.LogrosScreen
 import com.example.proyectoseminario.ui.mapa.MapaScreen
 import com.example.proyectoseminario.ui.mapa.MapaViewModel
 import com.example.proyectoseminario.ui.navigation.BottomNavItem
@@ -114,7 +117,7 @@ private fun AppNavigation(
     context: android.content.Context
 ) {
     val navController = rememberNavController()
-    val navItems = listOf(BottomNavItem.Mapa, BottomNavItem.Perfil)
+    val navItems = listOf(BottomNavItem.Mapa, BottomNavItem.Logros, BottomNavItem.Perfil)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState(initial = false)
@@ -123,6 +126,7 @@ private fun AppNavigation(
 
     val mostrarBottomBar = currentRoute in listOf(
         BottomNavItem.Mapa.route,
+        BottomNavItem.Logros.route,
         BottomNavItem.Perfil.route
     )
 
@@ -194,7 +198,22 @@ private fun AppNavigation(
                     onNodoClick = { nodoId ->
                         Toast.makeText(context, "Nivel $nodoId seleccionado", Toast.LENGTH_SHORT).show()
                         navController.navigate("ejercicio/$nodoId")
+                    },
+                    onExamenClick = { navController.navigate("examen") }
+                )
+            }
+
+            composable("examen") {
+                val examenViewModel: ExamenViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T = ExamenViewModel(mapaRepository) as T
                     }
+                )
+
+                ExamenScreen(
+                    viewModel = examenViewModel,
+                    onExamenComplete = { navController.popBackStack() }
                 )
             }
 
@@ -225,6 +244,14 @@ private fun AppNavigation(
                         navController.popBackStack()
                     }
                 )
+            }
+
+            composable(BottomNavItem.Logros.route) {
+                val perfilViewModel: PerfilViewModel = viewModel(
+                    factory = PerfilViewModelFactory(mapaRepository, sessionManager)
+                )
+
+                LogrosScreen(viewModel = perfilViewModel)
             }
 
             composable(BottomNavItem.Perfil.route) {

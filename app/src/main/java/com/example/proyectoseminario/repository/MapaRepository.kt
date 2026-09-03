@@ -33,6 +33,20 @@ class MapaRepository(private val appDao: AppDao) {
         appDao.insertRegistroRespuesta(registro)
     }
 
+    suspend fun actualizarNivelActual(nivel: Int) {
+        val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
+        appDao.updatePerfil(perfil.copy(nivelActual = nivel))
+    }
+
+    suspend fun desbloquearNodosHasta(nivel: Int) {
+        val nodos = appDao.getTodosLosNodos().firstOrNull() ?: return
+        nodos.filter { it.nivelOrden <= nivel }.forEach { nodo ->
+            if (!nodo.estaDesbloqueado) {
+                appDao.updateNodo(nodo.copy(estaDesbloqueado = true))
+            }
+        }
+    }
+
     suspend fun completarNodoYDesbloquearSiguiente(nodoActualId: Int, puntosGanados: Int = 10) {
         val nodos = appDao.getTodosLosNodos().firstOrNull() ?: return
         val nodoActual = nodos.find { it.id == nodoActualId } ?: return

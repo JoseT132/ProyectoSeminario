@@ -148,10 +148,7 @@ fun PerfilScreen(
                     )
                 }
 
-                // Sección de Logros e Insignias
-                SeccionLogros(logros = uiState.logros)
-
-                Button(
+                    Button(
                     onClick = { viewModel.cerrarSesion(onLogout) },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -193,54 +190,3 @@ fun TarjetaMetrica(
     }
 }
 
-@Composable
-fun SeccionLogros(logros: List<Logro>) {
-    Text(
-        text = "Logros e Insignias",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        logros.forEach { logro ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (logro.desbloqueado)
-                        MaterialTheme.colorScheme.primaryContainer
-                    else
-                        MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = logro.icono,
-                        contentDescription = logro.titulo,
-                        tint = if (logro.desbloqueado)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            Color.Gray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = logro.titulo,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = logro.descripcion,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
