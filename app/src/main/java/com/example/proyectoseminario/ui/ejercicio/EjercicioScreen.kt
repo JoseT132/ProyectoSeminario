@@ -14,6 +14,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.example.proyectoseminario.ui.components.EmptyContent
+import com.example.proyectoseminario.ui.components.LoadingContent
+
 @Composable
 fun EjercicioScreen(
     viewModel: EjercicioViewModel,
@@ -24,22 +27,12 @@ fun EjercicioScreen(
     var mostrarExplicacion by remember { mutableStateOf(false) }
 
     if (state.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
+        LoadingContent()
         return
     }
 
     if (ejercicioActual == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "No hay ejercicios disponibles para este nivel.")
-        }
+        EmptyContent(message = "No hay ejercicios disponibles para este nivel.")
         return
     }
 

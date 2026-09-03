@@ -61,7 +61,7 @@ fun MapaScreen(
                 ),
                 title = {
                     Text(
-                        text = "📜 Reino de las Matemáticas",
+                        text = "Reino de las Matemáticas",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -85,9 +85,9 @@ fun MapaScreen(
                             .background(ColorOro)
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text(text = "🔥 ${perfil?.rachaDias ?: 0} d  ", fontSize = 14.sp)
+                        Text(text = "Racha: ${perfil?.rachaDias ?: 0} d  ", fontSize = 14.sp)
                         Text(
-                            text = "⚔️ ${perfil?.puntos ?: 0} XP",
+                            text = "${perfil?.puntos ?: 0} XP",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = ColorMaderaOscura

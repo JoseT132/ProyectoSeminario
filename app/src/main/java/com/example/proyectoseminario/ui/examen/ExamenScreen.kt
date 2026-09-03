@@ -126,7 +126,7 @@ fun ResultadoExamenDialog(
         icon = {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
+                contentDescription = "Examen completado",
                 tint = MaterialTheme.colorScheme.primary
             )
         },
