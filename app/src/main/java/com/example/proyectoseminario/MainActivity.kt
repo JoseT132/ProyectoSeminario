@@ -21,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -49,6 +52,7 @@ import com.example.proyectoseminario.ui.examen.ExamenViewModel
 import com.example.proyectoseminario.ui.logros.LogrosScreen
 import com.example.proyectoseminario.ui.mapa.MapaScreen
 import com.example.proyectoseminario.ui.mapa.MapaViewModel
+import com.example.proyectoseminario.ui.onboarding.OnboardingScreen
 import com.example.proyectoseminario.ui.navigation.BottomNavItem
 import com.example.proyectoseminario.ui.perfil.PerfilScreen
 import com.example.proyectoseminario.ui.perfil.PerfilViewModel
@@ -84,14 +88,31 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation(
-                        mapaViewModel = mapaViewModel,
-                        loginViewModel = loginViewModel,
-                        registroViewModel = registroViewModel,
-                        mapaRepository = mapaRepository,
-                        sessionManager = sessionManager,
-                        context = this@MainActivity
-                    )
+                    var showOnboarding by remember { mutableStateOf<Boolean?>(null) }
+
+                    LaunchedEffect(Unit) {
+                        showOnboarding = !sessionManager.hasCompletedOnboarding()
+                    }
+
+                    when (showOnboarding) {
+                        null -> { Text("Cargando...") }
+                        true -> OnboardingScreen(
+                            onFinish = {
+                                lifecycleScope.launch {
+                                    sessionManager.setOnboardingCompleted()
+                                    showOnboarding = false
+                                }
+                            }
+                        )
+                        false -> AppNavigation(
+                            mapaViewModel = mapaViewModel,
+                            loginViewModel = loginViewModel,
+                            registroViewModel = registroViewModel,
+                            mapaRepository = mapaRepository,
+                            sessionManager = sessionManager,
+                            context = this@MainActivity
+                        )
+                    }
                 }
             }
         }

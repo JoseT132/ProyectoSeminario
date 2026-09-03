@@ -10,7 +10,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -25,6 +27,7 @@ class SessionManager(private val context: Context) {
         val USER_ID = intPreferencesKey("user_id")
         val RACHA_DIAS = intPreferencesKey("racha_dias")
         val LAST_LOGIN_DATE = stringPreferencesKey("last_login_date")
+        val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data
@@ -70,6 +73,21 @@ class SessionManager(private val context: Context) {
         }
 
         return nuevaRacha
+    }
+
+    val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING] ?: false
+        }
+
+    suspend fun hasCompletedOnboarding(): Boolean = withContext(Dispatchers.IO) {
+        context.dataStore.data.firstOrNull()?.get(HAS_COMPLETED_ONBOARDING) ?: false
+    }
+
+    suspend fun setOnboardingCompleted() {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING] = true
+        }
     }
 
     suspend fun clearSession() {
