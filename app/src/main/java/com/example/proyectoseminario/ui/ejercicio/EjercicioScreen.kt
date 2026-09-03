@@ -17,16 +17,13 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun EjercicioScreen(
     viewModel: EjercicioViewModel,
-    cargando: Boolean,
     onSiguienteEjercicio: () -> Unit = {}
 ) {
-    val ejercicio by viewModel.ejercicioActual.collectAsState()
-    val opcionSeleccionadaIndex by viewModel.opcionSeleccionada.collectAsState()
-    val esCorrecto by viewModel.esCorrecto.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val ejercicioActual = state.ejercicioActual
+    var mostrarExplicacion by remember { mutableStateOf(false) }
 
-    var mostrarExplicacion by remember(ejercicio?.id) { mutableStateOf(false) }
-
-    if (cargando) {
+    if (state.isLoading) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -36,7 +33,6 @@ fun EjercicioScreen(
         return
     }
 
-    val ejercicioActual = ejercicio
     if (ejercicioActual == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -62,13 +58,19 @@ fun EjercicioScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // --- Sección Superior: Pregunta y Opciones (Con Scroll) ---
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center
             ) {
+                Text(
+                    text = state.progreso,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
                 Text(
                     text = ejercicioActual.enunciado,
                     fontSize = 20.sp,
@@ -77,23 +79,22 @@ fun EjercicioScreen(
                 )
 
                 opciones.forEachIndexed { index, opcion ->
-                    // Definición dinámica de colores según el estado de la verificación
                     val containerColor = when {
-                        esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFFC8E6C9) // Verde claro para la correcta
-                        esCorrecto == false && index == opcionSeleccionadaIndex -> Color(0xFFFFCDD2) // Rojo claro para la incorrecta seleccionada
-                        opcionSeleccionadaIndex == index -> MaterialTheme.colorScheme.primaryContainer // Selección normal
+                        state.esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFFC8E6C9)
+                        state.esCorrecto == false && index == state.opcionSeleccionada -> Color(0xFFFFCDD2)
+                        state.opcionSeleccionada == index -> MaterialTheme.colorScheme.primaryContainer
                         else -> Color.Transparent
                     }
 
                     val contentColor = when {
-                        esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFF1B5E20)
-                        esCorrecto == false && index == opcionSeleccionadaIndex -> Color(0xFFB71C1C)
+                        state.esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFF1B5E20)
+                        state.esCorrecto == false && index == state.opcionSeleccionada -> Color(0xFFB71C1C)
                         else -> MaterialTheme.colorScheme.onSurface
                     }
 
                     OutlinedButton(
                         onClick = {
-                            if (esCorrecto == null) {
+                            if (state.esCorrecto == null) {
                                 viewModel.seleccionarOpcion(index)
                                 mostrarExplicacion = false
                             }
@@ -115,10 +116,8 @@ fun EjercicioScreen(
                 }
             }
 
-            // --- Sección Inferior: Banners y Botón de Acción ---
             Column {
-                // Banner Verde (Correcto)
-                AnimatedVisibility(visible = esCorrecto == true) {
+                AnimatedVisibility(visible = state.esCorrecto == true) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -134,7 +133,7 @@ fun EjercicioScreen(
                                 fontSize = 18.sp
                             )
                             Text(
-                                text = "¡Excelente trabajo! Has elegido la opción adecuada.",
+                                text = "Has dominado este ejercicio.",
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
@@ -142,8 +141,7 @@ fun EjercicioScreen(
                     }
                 }
 
-                // Banner Rojo (Incorrecto con Desplegable)
-                AnimatedVisibility(visible = esCorrecto == false) {
+                AnimatedVisibility(visible = state.esCorrecto == false) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -159,7 +157,7 @@ fun EjercicioScreen(
                                 fontSize = 18.sp
                             )
                             Text(
-                                text = "La opción seleccionada no es la correcta.",
+                                text = "Sigue practicando para alcanzar el 80% de dominio.",
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
@@ -188,27 +186,68 @@ fun EjercicioScreen(
                     }
                 }
 
-                // Botón Comprobar / Continuar
+                AnimatedVisibility(visible = state.finalizado) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (state.dominioAlcanzado)
+                                Color(0xFF4CAF50)
+                            else
+                                Color(0xFFFF9800)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = if (state.dominioAlcanzado)
+                                    "¡Módulo dominado!"
+                                else
+                                    "Dominio insuficiente",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                            Text(
+                                text = if (state.dominioAlcanzado)
+                                    "Alcanzaste al menos el 80% correcto. Puedes continuar."
+                                else
+                                    "Necesitas al menos 80% correcto para desbloquear el siguiente módulo.",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+
                 Button(
                     onClick = {
-                        if (esCorrecto == null) {
-                            viewModel.verificarRespuesta()
-                        } else {
-                            val fueRespuestaCorrecta = esCorrecto == true
-                            viewModel.reiniciarEstado()
-                            mostrarExplicacion = false
-                            if (fueRespuestaCorrecta) {
-                                onSiguienteEjercicio()
+                        when {
+                            state.esCorrecto == null -> viewModel.verificarRespuesta()
+                            state.finalizado && state.dominioAlcanzado -> onSiguienteEjercicio()
+                            state.finalizado && !state.dominioAlcanzado -> {
+                                viewModel.reiniciar()
+                                mostrarExplicacion = false
+                            }
+                            else -> {
+                                viewModel.siguiente()
+                                mostrarExplicacion = false
                             }
                         }
                     },
-                    enabled = opcionSeleccionadaIndex != null,
+                    enabled = if (state.esCorrecto == null) state.opcionSeleccionada != null else true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
                 ) {
                     Text(
-                        text = if (esCorrecto == null) "Comprobar" else "Continuar",
+                        text = when {
+                            state.esCorrecto == null -> "Comprobar"
+                            state.finalizado && state.dominioAlcanzado -> "Continuar"
+                            state.finalizado && !state.dominioAlcanzado -> "Repetir módulo"
+                            else -> "Siguiente"
+                        },
                         fontSize = 16.sp
                     )
                 }

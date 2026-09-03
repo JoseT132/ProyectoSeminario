@@ -25,6 +25,9 @@ fun ExamenScreen(
     onExamenComplete: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val pregunta = viewModel.preguntasExamen[uiState.preguntaActual]
+    val esUltima = uiState.preguntaActual == viewModel.preguntasExamen.size - 1
+    val seleccionActual = uiState.respuestas[pregunta.id]
 
     if (uiState.resultado != null) {
         ResultadoExamenDialog(
@@ -39,7 +42,14 @@ fun ExamenScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Examen de ubicación") }
+                title = { Text("Examen de ubicación") },
+                actions = {
+                    Text(
+                        text = "Pregunta ${uiState.preguntaActual + 1} de ${viewModel.preguntasExamen.size}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                }
             )
         }
     ) { padding ->
@@ -47,40 +57,64 @@ fun ExamenScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "Responde las 10 preguntas para descubrir tu nivel inicial.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
+            Column {
+                Text(
+                    text = "Responde para descubrir tu nivel inicial.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
 
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(viewModel.preguntasExamen, key = { it.id }) { pregunta ->
-                    PreguntaCard(
-                        pregunta = pregunta,
-                        seleccionada = uiState.respuestas[pregunta.id],
-                        onSeleccionar = { index ->
-                            viewModel.seleccionarRespuesta(pregunta.id, index)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = pregunta.enunciado,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        pregunta.opciones.forEachIndexed { index, opcion ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { viewModel.seleccionarRespuesta(pregunta.id, index) }
+                                    .padding(vertical = 6.dp)
+                            ) {
+                                RadioButton(
+                                    selected = seleccionActual == index,
+                                    onClick = { viewModel.seleccionarRespuesta(pregunta.id, index) }
+                                )
+                                Text(
+                                    text = opcion,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
                         }
-                    )
+                    }
                 }
             }
 
             Button(
-                onClick = { viewModel.finalizarExamen() },
-                enabled = uiState.respuestas.size == viewModel.preguntasExamen.size,
+                onClick = { viewModel.avanzarPregunta() },
+                enabled = seleccionActual != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
                     .height(50.dp)
             ) {
-                Text("Finalizar examen")
+                Text(if (esUltima) "Finalizar examen" else "Siguiente")
             }
         }
     }

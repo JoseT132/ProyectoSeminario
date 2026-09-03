@@ -18,9 +18,8 @@ class MapaRepository(private val appDao: AppDao) {
 
     fun getTotalRespuestasCorrectas(): Flow<Int> = appDao.getTotalRespuestasCorrectas()
 
-    suspend fun obtenerEjercicioPorNodo(nodoId: Int): Ejercicio? {
-        val listaEjercicios = appDao.getEjerciciosPorNodo(nodoId).firstOrNull()
-        return listaEjercicios?.firstOrNull()
+    suspend fun obtenerEjerciciosPorNodo(nodoId: Int): List<Ejercicio> {
+        return appDao.getEjerciciosPorNodo(nodoId).firstOrNull() ?: emptyList()
     }
 
     suspend fun guardarRespuesta(nodoId: Int, ejercicioId: Int, esCorrecto: Boolean, tiempoSegundos: Int = 0) {

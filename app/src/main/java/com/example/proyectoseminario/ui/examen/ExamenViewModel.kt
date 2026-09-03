@@ -25,7 +25,18 @@ class ExamenViewModel(
         _uiState.value = _uiState.value.copy(respuestas = actuales)
     }
 
-    fun finalizarExamen() {
+    fun avanzarPregunta() {
+        val state = _uiState.value
+        if (state.respuestas.containsKey(preguntas[state.preguntaActual].id)) {
+            if (state.preguntaActual < preguntas.size - 1) {
+                _uiState.value = state.copy(preguntaActual = state.preguntaActual + 1)
+            } else {
+                finalizarExamen()
+            }
+        }
+    }
+
+    private fun finalizarExamen() {
         val respuestas = _uiState.value.respuestas
         var correctas = 0
 
@@ -63,6 +74,7 @@ class ExamenViewModel(
     }
 
     data class ExamenUiState(
+        val preguntaActual: Int = 0,
         val respuestas: Map<Int, Int> = emptyMap(),
         val resultado: ResultadoExamen? = null
     )

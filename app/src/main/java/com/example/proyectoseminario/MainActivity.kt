@@ -230,15 +230,12 @@ private fun AppNavigation(
                     }
                 )
 
-                val ejercicio by ejercicioViewModel.ejercicioActual.collectAsState()
-
                 LaunchedEffect(nodoId) {
-                    ejercicioViewModel.cargarEjercicio(nodoId)
+                    ejercicioViewModel.cargarEjercicios(nodoId)
                 }
 
                 EjercicioScreen(
                     viewModel = ejercicioViewModel,
-                    cargando = (ejercicio == null),
                     onSiguienteEjercicio = {
                         mapaViewModel.finalizarNivelCorrecto(nodoId)
                         navController.popBackStack()
