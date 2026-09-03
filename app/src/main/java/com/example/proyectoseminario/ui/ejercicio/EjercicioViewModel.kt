@@ -47,7 +47,6 @@ class EjercicioViewModel(
         val seleccion = state.opcionSeleccionada ?: return
 
         val correcta = seleccion == ejercicio.respuestaCorrecta
-        val aciertos = if (correcta) state.aciertos + 1 else state.aciertos
         val tiempoSegundos = ((System.currentTimeMillis() - state.tiempoInicio) / 1000).toInt()
 
         viewModelScope.launch {
@@ -61,7 +60,6 @@ class EjercicioViewModel(
 
         _uiState.value = state.copy(
             esCorrecto = correcta,
-            aciertos = aciertos,
             tiempoSegundos = tiempoSegundos
         )
     }
@@ -70,10 +68,13 @@ class EjercicioViewModel(
         val state = _uiState.value
         val respondidas = state.respondidas + 1
         val dificultad = siguienteDificultad(state)
+        val esCorrecto = state.esCorrecto == true
 
-        if (respondidas >= META_PREGUNTAS) {
-            val dominio = if (respondidas > 0) (state.aciertos * 100) / respondidas else 0
+        if (esCorrecto && state.aciertos + 1 >= META_PREGUNTAS) {
+            val aciertos = state.aciertos + 1
+            val dominio = if (respondidas > 0) (aciertos * 100) / respondidas else 0
             _uiState.value = state.copy(
+                aciertos = aciertos,
                 respondidas = respondidas,
                 dominioAlcanzado = dominio >= 80,
                 finalizado = true
@@ -82,14 +83,21 @@ class EjercicioViewModel(
         }
 
         val siguienteEjercicio = state.ejercicios
-            .filter { it.dificultad == dificultad }
+            .filter { it.dificultad == dificultad && it.id != (state.ejercicioActual?.id ?: -1) }
             .minByOrNull { it.id }
+            ?: state.ejercicios.find { it.dificultad == dificultad }
             ?: state.ejercicios.lastOrNull()
 
-        val nuevaRuta = if (siguienteEjercicio != null) state.ruta + siguienteEjercicio else state.ruta
+        val nuevaRuta = if (esCorrecto) {
+            (if (siguienteEjercicio != null) state.ruta + siguienteEjercicio else state.ruta)
+        } else {
+            if (siguienteEjercicio != null) state.ruta.dropLast(1) + siguienteEjercicio else state.ruta
+        }
+
         _uiState.value = state.copy(
             ruta = nuevaRuta,
             indiceActual = nuevaRuta.size - 1,
+            aciertos = if (esCorrecto) state.aciertos + 1 else state.aciertos,
             respondidas = respondidas,
             dificultadActual = dificultad,
             opcionSeleccionada = null,
@@ -146,6 +154,6 @@ class EjercicioViewModel(
         val dominioAlcanzado: Boolean = false
     ) {
         val ejercicioActual: Ejercicio? get() = ruta.getOrNull(indiceActual)
-        val progreso: String get() = "Pregunta ${respondidas + 1} de $META_PREGUNTAS · Dificultad $dificultadActual"
+        val progreso: String get() = "Pregunta ${aciertos + 1} de $META_PREGUNTAS · Dificultad $dificultadActual"
     }
 }
