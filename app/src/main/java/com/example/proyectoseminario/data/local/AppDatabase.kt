@@ -14,8 +14,7 @@ import kotlinx.coroutines.launch
         PerfilUsuario::class,
         NodoCamino::class,
         Ejercicio::class,
-        RegistroRespuesta::class,
-        SincronizacionPendiente::class
+        RegistroRespuesta::class
     ],
     version = 2,
     exportSchema = false

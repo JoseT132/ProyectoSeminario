@@ -65,15 +65,6 @@ dependencies {
     // Hash seguro de contraseñas con BCrypt
     implementation(libs.jbcrypt)
 
-    // Networking para JWT y sincronización
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-    implementation(libs.okhttp.logging)
-    implementation(libs.gson)
-
-    // WorkManager para sincronización offline/online
-    implementation(libs.androidx.work.runtime.ktx)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

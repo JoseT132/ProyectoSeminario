@@ -59,16 +59,4 @@ interface AppDao {
     @Query("SELECT COUNT(*) FROM registro_respuestas WHERE esCorrecto = 1")
     fun getTotalRespuestasCorrectas(): Flow<Int>
 
-    // Sincronización Pendiente
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarSincronizacionPendiente(item: SincronizacionPendiente)
-
-    @Query("SELECT * FROM sincronizacion_pendiente WHERE correo = :correo ORDER BY fechaCreado ASC")
-    suspend fun obtenerSincronizacionPendiente(correo: String): List<SincronizacionPendiente>
-
-    @Query("DELETE FROM sincronizacion_pendiente WHERE id IN (:ids)")
-    suspend fun eliminarSincronizaciones(ids: List<Int>)
-
-    @Query("SELECT COUNT(*) FROM sincronizacion_pendiente WHERE correo = :correo")
-    fun getCantidadPendientes(correo: String): Flow<Int>
 }
