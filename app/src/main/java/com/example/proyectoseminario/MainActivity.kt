@@ -74,29 +74,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val mapaViewModel = ViewModelProvider(
-            this,
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T = MapaViewModel(mapaRepository) as T
-            }
-        )[MapaViewModel::class.java]
-
-        val loginViewModel = ViewModelProvider(
-            this,
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T = LoginViewModel(authRepository, sessionManager) as T
-            }
-        )[LoginViewModel::class.java]
-
-        val registroViewModel = ViewModelProvider(
-            this,
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T = RegistroViewModel(authRepository, sessionManager) as T
-            }
-        )[RegistroViewModel::class.java]
+        val mapaViewModel = viewModelConFactory { MapaViewModel(mapaRepository) }
+        val loginViewModel = viewModelConFactory { LoginViewModel(authRepository, sessionManager) }
+        val registroViewModel = viewModelConFactory { RegistroViewModel(authRepository, sessionManager) }
 
         setContent {
             ProyectoSeminarioTheme {
@@ -116,6 +96,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private inline fun <reified T : ViewModel> viewModelConFactory(
+        crossinline factory: () -> T
+    ): T = ViewModelProvider(
+        this,
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <U : ViewModel> create(modelClass: Class<U>): U = factory() as U
+        }
+    )[T::class.java]
 }
 
 @Composable
