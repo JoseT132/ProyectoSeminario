@@ -12,7 +12,7 @@ class MapaRepository(private val appDao: AppDao) {
 
     fun getTodosLosNodos(): Flow<List<NodoCamino>> = appDao.getTodosLosNodos()
 
-    fun getPerfil(): Flow<PerfilUsuario?> = appDao.getPerfil()
+    fun getPerfil(): Flow<PerfilUsuario?> = appDao.getPrimerPerfil()
 
     fun getTotalRespuestas(): Flow<Int> = appDao.getTotalRespuestas()
 
@@ -47,7 +47,7 @@ class MapaRepository(private val appDao: AppDao) {
                 appDao.updateNodo(it.copy(estaDesbloqueado = true))
             }
 
-            val perfilActual = appDao.getPerfil().firstOrNull()
+            val perfilActual = appDao.getPrimerPerfil().firstOrNull()
             if (perfilActual != null) {
                 val perfilActualizado = perfilActual.copy(puntos = perfilActual.puntos + puntosGanados)
                 appDao.updatePerfil(perfilActualizado)

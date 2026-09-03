@@ -71,11 +71,11 @@ fun PerfilScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = uiState.perfil?.correo?.let { "Correo: $it" } ?: "Cuenta local",
+                                text = "Correo: ${uiState.perfil?.correo ?: ""}",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "Edad: ${uiState.perfil?.edad ?: "—"}  •  Nivel: ${uiState.perfil?.nivelEscolar ?: "—"}",
+                                text = "Nacimiento: ${uiState.perfil?.fechaNacimiento ?: "—"}  •  Nivel: ${uiState.perfil?.nivelEscolar ?: "—"}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(

@@ -46,15 +46,6 @@ class SessionManager(private val context: Context) {
         }
     }
 
-    suspend fun saveSessionLocal(userId: Int, name: String) {
-        context.dataStore.edit { preferences ->
-            preferences[IS_LOGGED_IN] = true
-            preferences[USER_ID] = userId
-            preferences[USER_EMAIL] = ""
-            preferences[USER_NAME] = name
-        }
-    }
-
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
             preferences[IS_LOGGED_IN] = false

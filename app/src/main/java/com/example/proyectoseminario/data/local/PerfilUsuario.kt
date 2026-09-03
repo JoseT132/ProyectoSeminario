@@ -12,14 +12,13 @@ data class PerfilUsuario(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val nombre: String,
-    val correo: String? = null,
-    val passwordHash: String? = null,
-    val edad: Int? = null,
+    val correo: String,
+    val passwordHash: String,
+    val fechaNacimiento: String = "",
     val nivelEscolar: String = "",
     val nivelActual: Int = 1,
     val puntos: Int = 0,
     val rachaDias: Int = 0,
     val precisionGeneral: Float = 0.0f,
-    val esLocal: Boolean = true,
     val fechaRegistro: Long = System.currentTimeMillis()
 )

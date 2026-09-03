@@ -11,7 +11,7 @@ class AuthRepository(private val appDao: AppDao) {
         nombre: String,
         correo: String,
         password: String,
-        edad: Int,
+        fechaNacimiento: String,
         nivelEscolar: String
     ): Result<PerfilUsuario> {
         if (!SecurityUtils.isValidEmail(correo)) {
@@ -27,29 +27,8 @@ class AuthRepository(private val appDao: AppDao) {
             nombre = nombre,
             correo = correo,
             passwordHash = SecurityUtils.hashPassword(password),
-            edad = edad,
-            nivelEscolar = nivelEscolar,
-            esLocal = false,
-            puntos = 0,
-            rachaDias = 0
-        )
-
-        appDao.insertPerfil(perfil)
-        return Result.success(perfil)
-    }
-
-    suspend fun registrarUsuarioLocal(
-        nombre: String,
-        edad: Int,
-        nivelEscolar: String
-    ): Result<PerfilUsuario> {
-        val perfil = PerfilUsuario(
-            nombre = nombre,
-            edad = edad,
-            nivelEscolar = nivelEscolar,
-            esLocal = true,
-            puntos = 0,
-            rachaDias = 0
+            fechaNacimiento = fechaNacimiento,
+            nivelEscolar = nivelEscolar
         )
 
         appDao.insertPerfil(perfil)
@@ -64,24 +43,13 @@ class AuthRepository(private val appDao: AppDao) {
         val perfil = appDao.getPerfilPorCorreo(correo)
             ?: return Result.failure(Exception("No existe una cuenta con este correo"))
 
-        val hash = perfil.passwordHash
-            ?: return Result.failure(Exception("Esta cuenta no tiene contraseña"))
-
-        if (!SecurityUtils.verifyPassword(password, hash)) {
+        if (!SecurityUtils.verifyPassword(password, perfil.passwordHash)) {
             return Result.failure(Exception("Contraseña incorrecta"))
         }
 
         return Result.success(perfil)
     }
 
-    suspend fun getPerfilPorId(id: Int): PerfilUsuario? {
-        val perfiles = appDao.getPerfil().firstOrNull()
-        return perfiles
-    }
-
-    suspend fun getPrimerPerfil(): PerfilUsuario? {
-        return appDao.getPrimerPerfil()
-    }
 
     suspend fun perfilExiste(correo: String): Boolean {
         return appDao.existeCorreo(correo) > 0

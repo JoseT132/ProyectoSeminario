@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
         Ejercicio::class,
         RegistroRespuesta::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "proyecto_seminario_db"
                 )
                     .addCallback(AppDatabaseCallback(scope))
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

@@ -14,8 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -31,7 +29,6 @@ fun RegistroScreen(
     onBackToLogin: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isLocal = remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -56,25 +53,6 @@ fun RegistroScreen(
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
-            // Modo de registro
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                FilterChip(
-                    selected = !isLocal.value,
-                    onClick = { isLocal.value = false },
-                    label = { Text("Con correo") }
-                )
-                FilterChip(
-                    selected = isLocal.value,
-                    onClick = { isLocal.value = true },
-                    label = { Text("Solo local") }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = uiState.nombre,
                 onValueChange = viewModel::onNombreChange,
@@ -88,13 +66,12 @@ fun RegistroScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = uiState.edad,
-                onValueChange = viewModel::onEdadChange,
-                label = { Text("Edad") },
+                value = uiState.fechaNacimiento,
+                onValueChange = viewModel::onFechaNacimientoChange,
+                label = { Text("Fecha de nacimiento (DD/MM/AAAA)") },
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next
                 ),
                 modifier = Modifier.fillMaxWidth()
@@ -114,22 +91,20 @@ fun RegistroScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (!isLocal.value) {
-                OutlinedTextField(
-                    value = uiState.correo,
-                    onValueChange = viewModel::onCorreoChange,
-                    label = { Text("Correo electrónico") },
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Next
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
+            OutlinedTextField(
+                value = uiState.correo,
+                onValueChange = viewModel::onCorreoChange,
+                label = { Text("Correo electrónico") },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                Spacer(modifier = Modifier.height(12.dp))
-            }
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = uiState.password,
@@ -175,7 +150,7 @@ fun RegistroScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { viewModel.registrar(isLocal.value, onRegisterSuccess) },
+                onClick = { viewModel.registrar(onRegisterSuccess) },
                 enabled = !uiState.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -184,7 +159,7 @@ fun RegistroScreen(
                 if (uiState.isLoading) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
                 } else {
-                    Text(if (isLocal.value) "Continuar localmente" else "Crear cuenta")
+                    Text("Crear cuenta")
                 }
             }
 

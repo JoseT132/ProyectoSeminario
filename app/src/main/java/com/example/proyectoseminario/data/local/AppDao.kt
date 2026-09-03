@@ -21,14 +21,11 @@ interface AppDao {
     suspend fun updateNodo(nodo: NodoCamino)
 
     // Perfil
-    @Query("SELECT * FROM perfil_usuario WHERE id = 1 LIMIT 1")
-    fun getPerfil(): Flow<PerfilUsuario?>
+    @Query("SELECT * FROM perfil_usuario ORDER BY id LIMIT 1")
+    fun getPrimerPerfil(): Flow<PerfilUsuario?>
 
     @Query("SELECT * FROM perfil_usuario WHERE correo = :correo LIMIT 1")
     suspend fun getPerfilPorCorreo(correo: String): PerfilUsuario?
-
-    @Query("SELECT * FROM perfil_usuario ORDER BY id LIMIT 1")
-    suspend fun getPrimerPerfil(): PerfilUsuario?
 
     @Query("SELECT COUNT(*) FROM perfil_usuario WHERE correo = :correo")
     suspend fun existeCorreo(correo: String): Int
