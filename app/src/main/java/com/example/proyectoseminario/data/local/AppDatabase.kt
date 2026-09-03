@@ -14,9 +14,10 @@ import kotlinx.coroutines.launch
         PerfilUsuario::class,
         NodoCamino::class,
         Ejercicio::class,
-        RegistroRespuesta::class
+        RegistroRespuesta::class,
+        SincronizacionPendiente::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -119,6 +120,9 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             )
             dao.insertEjercicios(ejercicios)
+
+            // Nota: El perfil de usuario se crea o carga en el registro/login,
+            // no durante la población inicial de la base de datos.
         }
     }
 }

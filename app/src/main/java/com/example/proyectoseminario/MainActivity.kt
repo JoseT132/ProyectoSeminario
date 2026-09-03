@@ -31,7 +31,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.proyectoseminario.data.local.AppDatabase
+import com.example.proyectoseminario.data.preferences.SessionManager
+import com.example.proyectoseminario.repository.AuthRepository
 import com.example.proyectoseminario.repository.MapaRepository
+import com.example.proyectoseminario.ui.auth.LoginScreen
+import com.example.proyectoseminario.ui.auth.LoginViewModel
+import com.example.proyectoseminario.ui.auth.RecuperacionScreen
+import com.example.proyectoseminario.ui.auth.RegistroScreen
+import com.example.proyectoseminario.ui.auth.RegistroViewModel
 import com.example.proyectoseminario.ui.ejercicio.EjercicioScreen
 import com.example.proyectoseminario.ui.ejercicio.EjercicioViewModel
 import com.example.proyectoseminario.ui.mapa.MapaScreen
@@ -49,15 +56,33 @@ class MainActivity : ComponentActivity() {
 
         val database = AppDatabase.getDatabase(this, lifecycleScope)
         val appDao = database.appDao()
-        val repository = MapaRepository(appDao)
+        val mapaRepository = MapaRepository(appDao)
+        val authRepository = AuthRepository(appDao)
+        val sessionManager = SessionManager(this)
 
-        val mapaViewModelFactory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        val mapaViewModel = ViewModelProvider(
+            this,
+            object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
-                return MapaViewModel(repository) as T
+                override fun <T : ViewModel> create(modelClass: Class<T>): T = MapaViewModel(mapaRepository) as T
             }
-        }
-        val mapaViewModel = ViewModelProvider(this, mapaViewModelFactory)[MapaViewModel::class.java]
+        )[MapaViewModel::class.java]
+
+        val loginViewModel = ViewModelProvider(
+            this,
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T = LoginViewModel(authRepository, sessionManager) as T
+            }
+        )[LoginViewModel::class.java]
+
+        val registroViewModel = ViewModelProvider(
+            this,
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T = RegistroViewModel(authRepository, sessionManager) as T
+            }
+        )[RegistroViewModel::class.java]
 
         setContent {
             ProyectoSeminarioTheme {
@@ -65,100 +90,156 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val navController = rememberNavController()
-                    val navItems = listOf(BottomNavItem.Mapa, BottomNavItem.Perfil)
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route
+                    AppNavigation(
+                        mapaViewModel = mapaViewModel,
+                        loginViewModel = loginViewModel,
+                        registroViewModel = registroViewModel,
+                        mapaRepository = mapaRepository,
+                        sessionManager = sessionManager,
+                        context = this@MainActivity
+                    )
+                }
+            }
+        }
+    }
+}
 
-                    // Ocultar la barra inferior si estamos resolviendo un ejercicio
-                    val mostrarBottomBar = currentRoute in listOf(BottomNavItem.Mapa.route, BottomNavItem.Perfil.route)
+@Composable
+private fun AppNavigation(
+    mapaViewModel: MapaViewModel,
+    loginViewModel: LoginViewModel,
+    registroViewModel: RegistroViewModel,
+    mapaRepository: MapaRepository,
+    sessionManager: SessionManager,
+    context: android.content.Context
+) {
+    val navController = rememberNavController()
+    val navItems = listOf(BottomNavItem.Mapa, BottomNavItem.Perfil)
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val isLoggedIn by sessionManager.isLoggedIn.collectAsState(initial = false)
 
-                    Scaffold(
-                        bottomBar = {
-                            if (mostrarBottomBar) {
-                                NavigationBar {
-                                    navItems.forEach { item ->
-                                        NavigationBarItem(
-                                            icon = { Icon(item.icon, contentDescription = item.title) },
-                                            label = { Text(item.title) },
-                                            selected = currentRoute == item.route,
-                                            onClick = {
-                                                if (currentRoute != item.route) {
-                                                    navController.navigate(item.route) {
-                                                        popUpTo(navController.graph.findStartDestination().id) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
-                                                }
-                                            }
-                                        )
+    val startDestination = if (isLoggedIn) BottomNavItem.Mapa.route else "login"
+
+    val mostrarBottomBar = currentRoute in listOf(
+        BottomNavItem.Mapa.route,
+        BottomNavItem.Perfil.route
+    )
+
+    Scaffold(
+        bottomBar = {
+            if (mostrarBottomBar) {
+                NavigationBar {
+                    navItems.forEach { item ->
+                        NavigationBarItem(
+                            icon = { Icon(item.icon, contentDescription = item.title) },
+                            label = { Text(item.title) },
+                            selected = currentRoute == item.route,
+                            onClick = {
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
                                 }
                             }
-                        }
-                    ) { innerPadding ->
-                        NavHost(
-                            navController = navController,
-                            startDestination = BottomNavItem.Mapa.route,
-                            modifier = Modifier.padding(innerPadding)
-                        ) {
-                            composable(BottomNavItem.Mapa.route) {
-                                MapaScreen(
-                                    viewModel = mapaViewModel,
-                                    onNodoClick = { nodoId ->
-                                        Toast.makeText(this@MainActivity, "Nivel $nodoId seleccionado", Toast.LENGTH_SHORT).show()
-                                        navController.navigate("ejercicio/$nodoId")
-                                    }
-                                )
-                            }
-
-                            composable(
-                                route = "ejercicio/{nodoId}",
-                                arguments = listOf(navArgument("nodoId") { type = NavType.IntType })
-                            ) { backStackEntry ->
-                                val nodoId = backStackEntry.arguments?.getInt("nodoId") ?: 1
-
-                                val ejercicioViewModelFactory = object : ViewModelProvider.Factory {
-                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                        @Suppress("UNCHECKED_CAST")
-                                        return EjercicioViewModel(repository) as T
-                                    }
-                                }
-
-                                val ejercicioViewModel: EjercicioViewModel = viewModel(
-                                    factory = ejercicioViewModelFactory
-                                )
-
-                                val ejercicio by ejercicioViewModel.ejercicioActual.collectAsState()
-
-                                LaunchedEffect(nodoId) {
-                                    ejercicioViewModel.cargarEjercicio(nodoId)
-                                }
-
-                                EjercicioScreen(
-                                    viewModel = ejercicioViewModel,
-                                    cargando = (ejercicio == null),
-                                    onSiguienteEjercicio = {
-                                        mapaViewModel.finalizarNivelCorrecto(nodoId)
-                                        navController.popBackStack()
-                                    }
-                                )
-                            }
-
-                            composable(BottomNavItem.Perfil.route) {
-                                val perfilViewModel: PerfilViewModel = viewModel(
-                                    factory = PerfilViewModelFactory(repository)
-                                )
-
-                                PerfilScreen(
-                                    viewModel = perfilViewModel
-                                )
-                            }
-                        }
+                        )
                     }
                 }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable("login") {
+                LoginScreen(
+                    viewModel = loginViewModel,
+                    onLoginSuccess = {
+                        navController.navigate(BottomNavItem.Mapa.route) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = { navController.navigate("registro") },
+                    onNavigateToRecovery = { navController.navigate("recuperacion") }
+                )
+            }
+
+            composable("registro") {
+                RegistroScreen(
+                    viewModel = registroViewModel,
+                    onRegisterSuccess = {
+                        navController.navigate(BottomNavItem.Mapa.route) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onBackToLogin = { navController.popBackStack() }
+                )
+            }
+
+            composable("recuperacion") {
+                RecuperacionScreen(
+                    onBackToLogin = { navController.popBackStack() }
+                )
+            }
+
+            composable(BottomNavItem.Mapa.route) {
+                MapaScreen(
+                    viewModel = mapaViewModel,
+                    onNodoClick = { nodoId ->
+                        Toast.makeText(context, "Nivel $nodoId seleccionado", Toast.LENGTH_SHORT).show()
+                        navController.navigate("ejercicio/$nodoId")
+                    }
+                )
+            }
+
+            composable(
+                route = "ejercicio/{nodoId}",
+                arguments = listOf(navArgument("nodoId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val nodoId = backStackEntry.arguments?.getInt("nodoId") ?: 1
+
+                val ejercicioViewModel: EjercicioViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T = EjercicioViewModel(mapaRepository) as T
+                    }
+                )
+
+                val ejercicio by ejercicioViewModel.ejercicioActual.collectAsState()
+
+                LaunchedEffect(nodoId) {
+                    ejercicioViewModel.cargarEjercicio(nodoId)
+                }
+
+                EjercicioScreen(
+                    viewModel = ejercicioViewModel,
+                    cargando = (ejercicio == null),
+                    onSiguienteEjercicio = {
+                        mapaViewModel.finalizarNivelCorrecto(nodoId)
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(BottomNavItem.Perfil.route) {
+                val perfilViewModel: PerfilViewModel = viewModel(
+                    factory = PerfilViewModelFactory(mapaRepository, sessionManager)
+                )
+
+                PerfilScreen(
+                    viewModel = perfilViewModel,
+                    onLogout = {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }

@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilScreen(
-    viewModel: PerfilViewModel
+    viewModel: PerfilViewModel,
+    onLogout: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -68,6 +69,14 @@ fun PerfilScreen(
                                 text = uiState.perfil?.nombre ?: "Estudiante",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = uiState.perfil?.correo?.let { "Correo: $it" } ?: "Cuenta local",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "Edad: ${uiState.perfil?.edad ?: "—"}  •  Nivel: ${uiState.perfil?.nivelEscolar ?: "—"}",
+                                style = MaterialTheme.typography.bodySmall
                             )
                             Text(
                                 text = "Puntos: ${uiState.perfil?.puntos ?: 0} XP",
@@ -141,6 +150,17 @@ fun PerfilScreen(
 
                 // Sección de Logros e Insignias
                 SeccionLogros(logros = uiState.logros)
+
+                Button(
+                    onClick = { viewModel.cerrarSesion(onLogout) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cerrar Sesión")
+                }
             }
         }
     }

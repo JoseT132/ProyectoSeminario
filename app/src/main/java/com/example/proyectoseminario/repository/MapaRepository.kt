@@ -51,15 +51,6 @@ class MapaRepository(private val appDao: AppDao) {
             if (perfilActual != null) {
                 val perfilActualizado = perfilActual.copy(puntos = perfilActual.puntos + puntosGanados)
                 appDao.updatePerfil(perfilActualizado)
-            } else {
-                appDao.insertPerfil(
-                    PerfilUsuario(
-                        id = 1,
-                        nombre = "Estudiante",
-                        rachaDias = 1,
-                        puntos = puntosGanados
-                    )
-                )
             }
         }
     }

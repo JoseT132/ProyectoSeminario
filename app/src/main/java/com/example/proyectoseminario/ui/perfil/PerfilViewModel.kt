@@ -6,14 +6,17 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.MapaRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class PerfilViewModel(
-    private val repository: MapaRepository
+    private val repository: MapaRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     val uiState: StateFlow<PerfilUiState> = combine(
@@ -68,4 +71,11 @@ class PerfilViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = PerfilUiState()
     )
+
+    fun cerrarSesion(onLogoutComplete: () -> Unit) {
+        viewModelScope.launch {
+            sessionManager.clearSession()
+            onLogoutComplete()
+        }
+    }
 }
