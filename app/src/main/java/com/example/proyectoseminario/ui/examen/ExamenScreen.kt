@@ -2,10 +2,6 @@ package com.example.proyectoseminario.ui.examen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
@@ -115,51 +111,6 @@ fun ExamenScreen(
                     .height(50.dp)
             ) {
                 Text(if (esUltima) "Finalizar examen" else "Siguiente")
-            }
-        }
-    }
-}
-
-@Composable
-fun PreguntaCard(
-    pregunta: PreguntaExamen,
-    seleccionada: Int?,
-    onSeleccionar: (Int) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "${pregunta.id}. ${pregunta.enunciado}",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            pregunta.opciones.forEachIndexed { index, opcion ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSeleccionar(index) }
-                        .padding(vertical = 4.dp)
-                ) {
-                    RadioButton(
-                        selected = seleccionada == index,
-                        onClick = { onSeleccionar(index) }
-                    )
-                    Text(
-                        text = opcion,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
             }
         }
     }

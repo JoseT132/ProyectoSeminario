@@ -2,6 +2,8 @@ package com.example.proyectoseminario
 
 import android.os.Bundle
 import android.widget.Toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -57,11 +59,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val database = AppDatabase.getDatabase(this, lifecycleScope)
+        val database = AppDatabase.getDatabase(this)
         val appDao = database.appDao()
         val mapaRepository = MapaRepository(appDao)
         val authRepository = AuthRepository(appDao)
         val sessionManager = SessionManager(this)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            database.poblarBaseDeDatos()
+        }
 
         val mapaViewModel = ViewModelProvider(
             this,
