@@ -8,7 +8,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "session_preferences")
@@ -20,6 +23,8 @@ class SessionManager(private val context: Context) {
         val USER_EMAIL = stringPreferencesKey("user_email")
         val USER_NAME = stringPreferencesKey("user_name")
         val USER_ID = intPreferencesKey("user_id")
+        val RACHA_DIAS = intPreferencesKey("racha_dias")
+        val LAST_LOGIN_DATE = stringPreferencesKey("last_login_date")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data
@@ -44,6 +49,27 @@ class SessionManager(private val context: Context) {
             preferences[USER_EMAIL] = email
             preferences[USER_NAME] = name
         }
+    }
+
+    suspend fun actualizarRacha(): Int {
+        val hoy = LocalDate.now().toString()
+        val prefs = context.dataStore.data.firstOrNull()
+        val ultimaFecha = prefs?.get(LAST_LOGIN_DATE)
+        val rachaActual = prefs?.get(RACHA_DIAS) ?: 0
+
+        val nuevaRacha = when {
+            ultimaFecha == null || ultimaFecha == hoy -> rachaActual.coerceAtLeast(1)
+            ChronoUnit.DAYS.between(LocalDate.parse(ultimaFecha), LocalDate.now()) == 1L -> rachaActual + 1
+            ChronoUnit.DAYS.between(LocalDate.parse(ultimaFecha), LocalDate.now()) < 1L -> rachaActual
+            else -> 1
+        }
+
+        context.dataStore.edit { preferences ->
+            preferences[RACHA_DIAS] = nuevaRacha
+            preferences[LAST_LOGIN_DATE] = hoy
+        }
+
+        return nuevaRacha
     }
 
     suspend fun clearSession() {

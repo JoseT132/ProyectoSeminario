@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -45,6 +46,11 @@ fun MapaScreen(
 ) {
     val nodos by viewModel.nodos.collectAsState()
     val perfil by viewModel.perfil.collectAsState()
+    val progresoDominio by viewModel.progresoDominio.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.cargarProgresoDominio()
+    }
 
     Scaffold(
         topBar = {
@@ -126,7 +132,8 @@ fun MapaScreen(
                         nodo = nodo,
                         offsetX = offsetX,
                         esUltimo = index == nodos.size - 1,
-                        onNodoClick = onNodoClick
+                        onNodoClick = onNodoClick,
+                        progresoDominio = progresoDominio[nodo.id] ?: 0
                     )
                 }
             }
@@ -208,7 +215,8 @@ fun NodoMedievalItem(
     nodo: NodoCamino,
     offsetX: androidx.compose.ui.unit.Dp,
     esUltimo: Boolean,
-    onNodoClick: (Int) -> Unit
+    onNodoClick: (Int) -> Unit,
+    progresoDominio: Int = 0
 ) {
     val backgroundColor = when {
         nodo.estaCompletado -> ColorVerdeVictoria
@@ -294,6 +302,26 @@ fun NodoMedievalItem(
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            )
+        }
+
+        val progresoTexto = when {
+            nodo.estaCompletado -> "100%"
+            nodo.estaDesbloqueado -> "${progresoDominio}%"
+            else -> "Bloqueado"
+        }
+
+        Surface(
+            color = ColorMaderaOscura,
+            shape = RoundedCornerShape(8.dp),
+            shadowElevation = 2.dp
+        ) {
+            Text(
+                text = progresoTexto,
+                color = ColorOro,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
             )
         }
 

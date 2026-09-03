@@ -3,6 +3,7 @@ package com.example.proyectoseminario
 import android.os.Bundle
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -67,6 +68,10 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             database.poblarBaseDeDatos()
+            if (sessionManager.isLoggedIn.firstOrNull() == true) {
+                val racha = sessionManager.actualizarRacha()
+                mapaRepository.actualizarRachaDias(racha)
+            }
         }
 
         val mapaViewModel = ViewModelProvider(

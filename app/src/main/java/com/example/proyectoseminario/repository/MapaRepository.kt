@@ -22,6 +22,12 @@ class MapaRepository(private val appDao: AppDao) {
         return appDao.getEjerciciosPorNodo(nodoId).firstOrNull() ?: emptyList()
     }
 
+    suspend fun calcularDominioNodo(nodoId: Int): Int {
+        val total = appDao.contarEjerciciosPorNodo(nodoId)
+        val correctas = appDao.contarRespuestasCorrectasPorNodo(nodoId)
+        return if (total > 0) (correctas * 100) / total else 0
+    }
+
     suspend fun guardarRespuesta(nodoId: Int, ejercicioId: Int, esCorrecto: Boolean, tiempoSegundos: Int = 0) {
         val registro = RegistroRespuesta(
             nodoId = nodoId,
@@ -30,6 +36,11 @@ class MapaRepository(private val appDao: AppDao) {
             tiempoSegundos = tiempoSegundos
         )
         appDao.insertRegistroRespuesta(registro)
+    }
+
+    suspend fun actualizarRachaDias(rachaDias: Int) {
+        val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
+        appDao.updatePerfil(perfil.copy(rachaDias = rachaDias))
     }
 
     suspend fun actualizarNivelActual(nivel: Int) {

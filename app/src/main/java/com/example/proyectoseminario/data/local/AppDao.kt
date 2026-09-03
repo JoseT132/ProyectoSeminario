@@ -56,4 +56,10 @@ interface AppDao {
     @Query("SELECT COUNT(*) FROM registro_respuestas WHERE esCorrecto = 1")
     fun getTotalRespuestasCorrectas(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM ejercicios WHERE nodoId = :nodoId")
+    suspend fun contarEjerciciosPorNodo(nodoId: Int): Int
+
+    @Query("SELECT COUNT(DISTINCT ejercicioId) FROM registro_respuestas WHERE nodoId = :nodoId AND esCorrecto = 1")
+    suspend fun contarRespuestasCorrectasPorNodo(nodoId: Int): Int
+
 }
