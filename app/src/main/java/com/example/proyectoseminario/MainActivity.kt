@@ -17,16 +17,15 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -225,7 +224,7 @@ private fun AppNavigation(
                         )
 
                         val elevacion by animateDpAsState(
-                            targetValue = if (selected) 10.dp else 3.dp,
+                            targetValue = if (selected) 8.dp else 2.dp,
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioMediumBouncy,
                                 stiffness = Spring.StiffnessMedium
@@ -233,12 +232,33 @@ private fun AppNavigation(
                             label = "elevacionNav"
                         )
 
-                        NavItemRelieve(
-                            item = item,
+                        NavigationBarItem(
+                            icon = {
+                                NavIconoRelieve(
+                                    item = item,
+                                    selected = selected,
+                                    escala = escala,
+                                    elevacion = elevacion
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = item.title,
+                                    fontSize = 11.sp,
+                                    color = if (selected) Color(0xFFFFD54F)
+                                        else Color(0xFFBDBDBD),
+                                    fontWeight = if (selected) FontWeight.Bold
+                                        else FontWeight.Normal
+                                )
+                            },
                             selected = selected,
-                            escala = escala,
-                            elevacion = elevacion,
-                            modifier = Modifier.weight(1f),
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = Color.Transparent,
+                                selectedIconColor = Color(0xFFFFD54F),
+                                unselectedIconColor = Color(0xFFBDBDBD),
+                                selectedTextColor = Color(0xFFFFD54F),
+                                unselectedTextColor = Color(0xFFBDBDBD)
+                            ),
                             onClick = {
                                 if (currentRoute != item.route) {
                                     navController.navigate(item.route) {
@@ -466,67 +486,49 @@ private fun AppNavigation(
 }
 
 /**
- * Item de navbar con efecto 3D: sobresale con sombra, borde claro arriba
+ * Chip de ícono con efecto 3D para la navbar: sombra, borde claro arriba
  * y oscuro abajo; el seleccionado se eleva más y toma tono dorado.
  */
 @Composable
-private fun NavItemRelieve(
+private fun NavIconoRelieve(
     item: BottomNavItem,
     selected: Boolean,
     escala: Float,
-    elevacion: Dp,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    elevacion: Dp
 ) {
     val colorContenido = if (selected) Color(0xFFFFD54F) else Color(0xFFBDBDBD)
     val colorFondo = if (selected) Color(0xFF5D4037) else Color(0xFF3E2723)
 
-    Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .padding(horizontal = 4.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            onClick = onClick,
-            shape = RoundedCornerShape(16.dp),
-            shadowElevation = elevacion,
-            border = BorderStroke(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = if (selected) 0.55f else 0.20f),
-                        Color.Black.copy(alpha = 0.55f)
-                    )
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        shadowElevation = elevacion,
+        border = BorderStroke(
+            width = 1.dp,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = if (selected) 0.55f else 0.20f),
+                    Color.Black.copy(alpha = 0.55f)
                 )
-            ),
-            color = colorFondo,
-            modifier = Modifier.fillMaxSize()
+            )
+        ),
+        color = colorFondo
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                item.icon?.let {
-                    Icon(
-                        it,
-                        contentDescription = item.title,
-                        tint = colorContenido,
-                        modifier = Modifier.scale(escala)
-                    )
-                } ?: Text(
-                    text = item.emoji ?: "",
-                    fontSize = 20.sp,
+            item.icon?.let {
+                Icon(
+                    it,
+                    contentDescription = item.title,
+                    tint = colorContenido,
                     modifier = Modifier.scale(escala)
                 )
-                Text(
-                    text = item.title,
-                    fontSize = 10.sp,
-                    color = colorContenido,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                )
-            }
+            } ?: Text(
+                text = item.emoji ?: "",
+                fontSize = 20.sp,
+                modifier = Modifier.scale(escala)
+            )
         }
     }
 }
