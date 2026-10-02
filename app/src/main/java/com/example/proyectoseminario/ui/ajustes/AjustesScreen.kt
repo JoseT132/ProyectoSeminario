@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.AuthRepository
+import com.example.proyectoseminario.ui.components.BotonRelieve
 import com.example.proyectoseminario.utils.GoogleSignInHelper
 import kotlinx.coroutines.launch
 
@@ -43,13 +44,14 @@ fun AjustesScreen(
     authRepository: AuthRepository,
     isDarkTheme: Boolean,
     onDarkThemeChange: (Boolean) -> Unit,
-    onLogout: () -> Unit,
     onAccountDeleted: () -> Unit
 ) {
     val userId by sessionManager.currentUserId.collectAsState(initial = 0)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showPoliticasDialog by remember { mutableStateOf(false) }
+    var showSeguridadDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -85,17 +87,31 @@ fun AjustesScreen(
                 }
             }
 
-            Button(
-                onClick = {
-                    scope.launch {
-                        GoogleSignInHelper.cerrarSesion(context)
-                        sessionManager.clearSession()
-                        onLogout()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Text("Cerrar sesión")
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Información",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    BotonRelieve(
+                        texto = "Políticas de Privacidad",
+                        emoji = "📜",
+                        onClick = { showPoliticasDialog = true }
+                    )
+                    BotonRelieve(
+                        texto = "Seguridad de Datos",
+                        emoji = "🛡",
+                        onClick = { showSeguridadDialog = true }
+                    )
+                }
             }
 
             Button(
@@ -108,6 +124,57 @@ fun AjustesScreen(
             ) {
                 Text("Eliminar cuenta")
             }
+        }
+
+        if (showPoliticasDialog) {
+            AlertDialog(
+                onDismissRequest = { showPoliticasDialog = false },
+                title = { Text("Políticas de Privacidad") },
+                text = {
+                    Text(
+                        "• Guardamos tu nombre, correo, fecha de nacimiento, nivel escolar " +
+                            "y tu progreso en las lecciones.\n\n" +
+                            "• Tus datos se almacenan localmente en tu dispositivo " +
+                            "(base de datos Room/SQLite).\n\n" +
+                            "• Si inicias sesión con Google, Firebase Authentication " +
+                            "gestiona tu identidad de forma segura.\n\n" +
+                            "• No compartimos ni vendemos tu información a terceros.\n\n" +
+                            "• Al eliminar tu cuenta desde Ajustes se borra tu perfil " +
+                            "y tu progreso local de forma permanente."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { showPoliticasDialog = false }) {
+                        Text("Entendido")
+                    }
+                }
+            )
+        }
+
+        if (showSeguridadDialog) {
+            AlertDialog(
+                onDismissRequest = { showSeguridadDialog = false },
+                title = { Text("Seguridad de Datos") },
+                text = {
+                    Text(
+                        "• Tu contraseña nunca se guarda en texto plano: se protege " +
+                            "con hash BCrypt antes de almacenarse.\n\n" +
+                            "• La sesión se mantiene localmente mediante DataStore " +
+                            "en el almacenamiento privado de la app.\n\n" +
+                            "• Con Google Sign-In, la autenticación la realiza Google " +
+                            "directamente; la app nunca ve tu contraseña de Google.\n\n" +
+                            "• Te recomendamos usar contraseñas de al menos 8 " +
+                            "caracteres con letras y números.\n\n" +
+                            "• Puedes eliminar todos tus datos en cualquier momento " +
+                            "con la opción \"Eliminar cuenta\"."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { showSeguridadDialog = false }) {
+                        Text("Entendido")
+                    }
+                }
+            )
         }
 
         if (showDeleteDialog) {

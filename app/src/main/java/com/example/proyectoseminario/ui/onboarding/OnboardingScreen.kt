@@ -29,16 +29,20 @@ fun OnboardingScreen(
 ) {
     val pages = listOf(
         OnboardingPage(
-            title = "Bienvenido a la Aventura Matemática",
-            description = "Embárcate en un viaje medieval para dominar las matemáticas, desbloquear niveles y mantener tu racha."
+            title = "Bienvenido al Reino de las Matemáticas",
+            description = "Embárcate en una aventura medieval: completa lecciones cortas, supera desafíos y derrota jefes para dominar las matemáticas."
         ),
         OnboardingPage(
             title = "Explora el mapa",
-            description = "Avanza por los nodos de conocimiento. Completa los ejercicios de cada módulo para desbloquear el siguiente."
+            description = "6 unidades te esperan, cada una con lecciones, un desafío aplicado 🐉 y un mini-jefe 💀. Al final te aguarda el Dragón del Caos 👑."
         ),
         OnboardingPage(
-            title = "Ejercicios adaptativos",
-            description = "Responde 20 preguntas por módulo. La dificultad se ajusta según tu desempeño y el tiempo de respuesta."
+            title = "Lecciones de 5 ejercicios",
+            description = "Sesiones cortas de menos de 15 minutos. Aprueba con al menos 4 de 5 aciertos y gana 10 XP la primera vez que domines cada lección."
+        ),
+        OnboardingPage(
+            title = "Desafíos y batallas",
+            description = "Pon a prueba lo aprendido con problemas del mundo real y enfréntate a los jefes: 3 vidas, tiempo por pregunta y gloria al vencer."
         )
     )
 

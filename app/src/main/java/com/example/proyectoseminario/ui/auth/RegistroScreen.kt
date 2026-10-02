@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.proyectoseminario.ui.components.SelectorFecha
 import com.example.proyectoseminario.utils.GoogleSignInHelper
 import kotlinx.coroutines.launch
 
@@ -71,16 +72,36 @@ fun RegistroScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = uiState.fechaNacimiento,
-                onValueChange = viewModel::onFechaNacimientoChange,
-                label = { Text("Fecha de nacimiento (DD/MM/AAAA)") },
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Next
+            Text(
+                text = "Fecha de nacimiento",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp)
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
-                modifier = Modifier.fillMaxWidth()
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                SelectorFecha(
+                    anioInicial = 2008,
+                    onFechaChange = viewModel::onFechaNacimientoChange,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
+
+            Text(
+                text = "Seleccionada: ${uiState.fechaNacimiento.ifBlank { "—" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))

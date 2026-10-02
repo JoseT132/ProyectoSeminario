@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -14,13 +15,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,8 +37,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -196,12 +208,15 @@ private fun AppNavigation(
     Scaffold(
         bottomBar = {
             if (mostrarBottomBar) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = Color(0xFF2B1B17),
+                    tonalElevation = 0.dp
+                ) {
                     navItems.forEach { item ->
                         val selected = currentRoute == item.route
 
                         val escala by animateFloatAsState(
-                            targetValue = if (selected) 1.2f else 1f,
+                            targetValue = if (selected) 1.15f else 1f,
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioMediumBouncy,
                                 stiffness = Spring.StiffnessLow
@@ -209,22 +224,21 @@ private fun AppNavigation(
                             label = "iconScale"
                         )
 
-                        NavigationBarItem(
-                            icon = {
-                                item.icon?.let {
-                                    Icon(
-                                        it,
-                                        contentDescription = item.title,
-                                        modifier = Modifier.scale(escala)
-                                    )
-                                } ?: Text(
-                                    text = item.emoji ?: "",
-                                    fontSize = 20.sp,
-                                    modifier = Modifier.scale(escala)
-                                )
-                            },
-                            label = { Text(item.title) },
+                        val elevacion by animateDpAsState(
+                            targetValue = if (selected) 10.dp else 3.dp,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "elevacionNav"
+                        )
+
+                        NavItemRelieve(
+                            item = item,
                             selected = selected,
+                            escala = escala,
+                            elevacion = elevacion,
+                            modifier = Modifier.weight(1f),
                             onClick = {
                                 if (currentRoute != item.route) {
                                     navController.navigate(item.route) {
@@ -440,16 +454,77 @@ private fun AppNavigation(
                     authRepository = authRepository,
                     isDarkTheme = isDarkTheme,
                     onDarkThemeChange = onDarkThemeChange,
-                    onLogout = {
-                        navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
                     onAccountDeleted = {
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }
                     }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Item de navbar con efecto 3D: sobresale con sombra, borde claro arriba
+ * y oscuro abajo; el seleccionado se eleva más y toma tono dorado.
+ */
+@Composable
+private fun NavItemRelieve(
+    item: BottomNavItem,
+    selected: Boolean,
+    escala: Float,
+    elevacion: Dp,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val colorContenido = if (selected) Color(0xFFFFD54F) else Color(0xFFBDBDBD)
+    val colorFondo = if (selected) Color(0xFF5D4037) else Color(0xFF3E2723)
+
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(16.dp),
+            shadowElevation = elevacion,
+            border = BorderStroke(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = if (selected) 0.55f else 0.20f),
+                        Color.Black.copy(alpha = 0.55f)
+                    )
+                )
+            ),
+            color = colorFondo,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                item.icon?.let {
+                    Icon(
+                        it,
+                        contentDescription = item.title,
+                        tint = colorContenido,
+                        modifier = Modifier.scale(escala)
+                    )
+                } ?: Text(
+                    text = item.emoji ?: "",
+                    fontSize = 20.sp,
+                    modifier = Modifier.scale(escala)
+                )
+                Text(
+                    text = item.title,
+                    fontSize = 10.sp,
+                    color = colorContenido,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                 )
             }
         }
