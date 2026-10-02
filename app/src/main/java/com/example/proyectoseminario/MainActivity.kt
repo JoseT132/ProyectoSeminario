@@ -1,13 +1,19 @@
 package com.example.proyectoseminario
 
+import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -26,6 +32,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -38,14 +46,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.proyectoseminario.data.local.AppDatabase
+import com.example.proyectoseminario.data.local.BancoEjercicios
+import com.example.proyectoseminario.data.local.NodoCamino
 import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.AuthRepository
 import com.example.proyectoseminario.repository.MapaRepository
+import com.example.proyectoseminario.ui.ajustes.AjustesScreen
 import com.example.proyectoseminario.ui.auth.LoginScreen
 import com.example.proyectoseminario.ui.auth.LoginViewModel
 import com.example.proyectoseminario.ui.auth.RecuperacionScreen
 import com.example.proyectoseminario.ui.auth.RegistroScreen
 import com.example.proyectoseminario.ui.auth.RegistroViewModel
+import com.example.proyectoseminario.ui.boss.BossScreen
+import com.example.proyectoseminario.ui.boss.BossViewModel
+import com.example.proyectoseminario.ui.desafios.DesafiosScreen
+import com.example.proyectoseminario.ui.desafios.DesafiosViewModel
 import com.example.proyectoseminario.ui.ejercicio.EjercicioScreen
 import com.example.proyectoseminario.ui.ejercicio.EjercicioViewModel
 import com.example.proyectoseminario.ui.examen.ExamenScreen
@@ -53,13 +68,15 @@ import com.example.proyectoseminario.ui.examen.ExamenViewModel
 import com.example.proyectoseminario.ui.logros.LogrosScreen
 import com.example.proyectoseminario.ui.mapa.MapaScreen
 import com.example.proyectoseminario.ui.mapa.MapaViewModel
-import com.example.proyectoseminario.ui.onboarding.OnboardingScreen
-import com.example.proyectoseminario.ui.ajustes.AjustesScreen
 import com.example.proyectoseminario.ui.navigation.BottomNavItem
+import com.example.proyectoseminario.ui.onboarding.OnboardingScreen
 import com.example.proyectoseminario.ui.perfil.PerfilScreen
 import com.example.proyectoseminario.ui.perfil.PerfilViewModel
 import com.example.proyectoseminario.ui.perfil.PerfilViewModelFactory
 import com.example.proyectoseminario.ui.theme.ProyectoSeminarioTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -115,7 +132,6 @@ class MainActivity : ComponentActivity() {
                             mapaRepository = mapaRepository,
                             sessionManager = sessionManager,
                             authRepository = authRepository,
-                            context = this@MainActivity,
                             isDarkTheme = darkTheme,
                             onDarkThemeChange = { darkTheme = it }
                         )
@@ -144,34 +160,71 @@ private fun AppNavigation(
     mapaRepository: MapaRepository,
     sessionManager: SessionManager,
     authRepository: AuthRepository,
-    context: android.content.Context,
     isDarkTheme: Boolean,
     onDarkThemeChange: (Boolean) -> Unit
 ) {
     val navController = rememberNavController()
-    val navItems = listOf(BottomNavItem.Mapa, BottomNavItem.Logros, BottomNavItem.Perfil, BottomNavItem.Ajustes)
+    val navItems = listOf(
+        BottomNavItem.Mapa,
+        BottomNavItem.Desafios,
+        BottomNavItem.Logros,
+        BottomNavItem.Perfil,
+        BottomNavItem.Ajustes
+    )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState(initial = false)
 
     val startDestination = if (isLoggedIn) BottomNavItem.Mapa.route else "login"
 
-    val mostrarBottomBar = currentRoute in listOf(
-        BottomNavItem.Mapa.route,
-        BottomNavItem.Logros.route,
-        BottomNavItem.Perfil.route,
-        BottomNavItem.Ajustes.route
-    )
+    val mostrarBottomBar = currentRoute in navItems.map { it.route }
+
+    val onNodoClick: (NodoCamino) -> Unit = { nodo ->
+        when (nodo.tipo) {
+            BancoEjercicios.TIPO_BOSS,
+            BancoEjercicios.TIPO_BOSS_FINAL -> {
+                navController.navigate("boss/${nodo.id}")
+            }
+            else -> {
+                navController.navigate(
+                    "ejercicio/${nodo.id}/${Uri.encode(nodo.titulo)}"
+                )
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
             if (mostrarBottomBar) {
                 NavigationBar {
                     navItems.forEach { item ->
+                        val selected = currentRoute == item.route
+
+                        val escala by animateFloatAsState(
+                            targetValue = if (selected) 1.2f else 1f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            ),
+                            label = "iconScale"
+                        )
+
                         NavigationBarItem(
-                            icon = { Icon(item.icon, contentDescription = item.title) },
+                            icon = {
+                                item.icon?.let {
+                                    Icon(
+                                        it,
+                                        contentDescription = item.title,
+                                        modifier = Modifier.scale(escala)
+                                    )
+                                } ?: Text(
+                                    text = item.emoji ?: "",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.scale(escala)
+                                )
+                            },
                             label = { Text(item.title) },
-                            selected = currentRoute == item.route,
+                            selected = selected,
                             onClick = {
                                 if (currentRoute != item.route) {
                                     navController.navigate(item.route) {
@@ -192,7 +245,21 @@ private fun AppNavigation(
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(300)
+                ) + fadeIn(tween(300))
+            },
+            exitTransition = { fadeOut(tween(250)) },
+            popEnterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(300)
+                ) + fadeIn(tween(300))
+            },
+            popExitTransition = { fadeOut(tween(250)) }
         ) {
             composable("login") {
                 LoginScreen(
@@ -228,11 +295,23 @@ private fun AppNavigation(
             composable(BottomNavItem.Mapa.route) {
                 MapaScreen(
                     viewModel = mapaViewModel,
-                    onNodoClick = { nodoId ->
-                        Toast.makeText(context, "Nivel $nodoId seleccionado", Toast.LENGTH_SHORT).show()
-                        navController.navigate("ejercicio/$nodoId")
-                    },
+                    onNodoClick = onNodoClick,
                     onExamenClick = { navController.navigate("examen") }
+                )
+            }
+
+            composable(BottomNavItem.Desafios.route) {
+                val desafiosViewModel: DesafiosViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            DesafiosViewModel(mapaRepository) as T
+                    }
+                )
+
+                DesafiosScreen(
+                    viewModel = desafiosViewModel,
+                    onDesafioClick = onNodoClick
                 )
             }
 
@@ -240,7 +319,8 @@ private fun AppNavigation(
                 val examenViewModel: ExamenViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T = ExamenViewModel(mapaRepository) as T
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            ExamenViewModel(mapaRepository) as T
                     }
                 )
 
@@ -251,15 +331,33 @@ private fun AppNavigation(
             }
 
             composable(
-                route = "ejercicio/{nodoId}",
-                arguments = listOf(navArgument("nodoId") { type = NavType.IntType })
+                route = "ejercicio/{nodoId}/{titulo}",
+                arguments = listOf(
+                    navArgument("nodoId") { type = NavType.IntType },
+                    navArgument("titulo") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideInVertically(
+                        animationSpec = tween(350),
+                        initialOffsetY = { it }
+                    ) + fadeIn(tween(350))
+                },
+                popExitTransition = {
+                    slideOutVertically(
+                        animationSpec = tween(300),
+                        targetOffsetY = { it }
+                    ) + fadeOut(tween(300))
+                }
             ) { backStackEntry ->
                 val nodoId = backStackEntry.arguments?.getInt("nodoId") ?: 1
+                val titulo = backStackEntry.arguments?.getString("titulo")
+                    ?.let { Uri.decode(it) } ?: "Lección"
 
                 val ejercicioViewModel: EjercicioViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T = EjercicioViewModel(mapaRepository) as T
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            EjercicioViewModel(mapaRepository) as T
                     }
                 )
 
@@ -269,10 +367,47 @@ private fun AppNavigation(
 
                 EjercicioScreen(
                     viewModel = ejercicioViewModel,
+                    tituloNivel = titulo,
                     onSiguienteEjercicio = {
                         mapaViewModel.finalizarNivelCorrecto(nodoId)
                         navController.popBackStack()
                     }
+                )
+            }
+
+            composable(
+                route = "boss/{nodoId}",
+                arguments = listOf(navArgument("nodoId") { type = NavType.IntType }),
+                enterTransition = {
+                    slideInVertically(
+                        animationSpec = tween(350),
+                        initialOffsetY = { it }
+                    ) + fadeIn(tween(350))
+                },
+                popExitTransition = {
+                    slideOutVertically(
+                        animationSpec = tween(300),
+                        targetOffsetY = { it }
+                    ) + fadeOut(tween(300))
+                }
+            ) { backStackEntry ->
+                val nodoId = backStackEntry.arguments?.getInt("nodoId") ?: 1
+
+                val bossViewModel: BossViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            BossViewModel(mapaRepository) as T
+                    }
+                )
+
+                LaunchedEffect(nodoId) {
+                    bossViewModel.cargarBoss(nodoId)
+                }
+
+                BossScreen(
+                    viewModel = bossViewModel,
+                    onSalir = { navController.popBackStack() }
                 )
             }
 

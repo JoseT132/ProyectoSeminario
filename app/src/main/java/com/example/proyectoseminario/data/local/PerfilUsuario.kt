@@ -14,6 +14,8 @@ data class PerfilUsuario(
     val nombre: String,
     val correo: String,
     val passwordHash: String,
+    val proveedorAuth: String = "local", // "local" | "google"
+    val firebaseUid: String? = null,
     val fechaNacimiento: String = "",
     val nivelEscolar: String = "",
     val nivelActual: Int = 1,

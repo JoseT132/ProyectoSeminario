@@ -11,12 +11,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.proyectoseminario.utils.GoogleSignInHelper
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +31,8 @@ fun LoginScreen(
     onNavigateToRecovery: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -104,6 +110,32 @@ fun LoginScreen(
                 } else {
                     Text("Iniciar Sesión")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val resultado = GoogleSignInHelper.obtenerIdToken(context)
+                        resultado.fold(
+                            onSuccess = { idToken ->
+                                viewModel.iniciarSesionConGoogle(idToken, onLoginSuccess)
+                            },
+                            onFailure = {
+                                viewModel.mostrarError(
+                                    "Google Sign-In no disponible. Configura Firebase (google-services.json y Web Client ID)."
+                                )
+                            }
+                        )
+                    }
+                },
+                enabled = !uiState.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text("Continuar con Google")
             }
 
             Spacer(modifier = Modifier.height(16.dp))

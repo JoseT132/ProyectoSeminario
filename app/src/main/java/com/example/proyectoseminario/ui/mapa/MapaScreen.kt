@@ -1,8 +1,15 @@
 package com.example.proyectoseminario.ui.mapa
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,15 +25,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.proyectoseminario.data.local.BancoEjercicios
 import com.example.proyectoseminario.data.local.NodoCamino
 
 // Paleta Medieval
@@ -37,18 +48,18 @@ val ColorHierroDesbloqueado = Color(0xFF5D4037)
 val ColorHierroBloqueado = Color(0xFF757575)
 val ColorVerdeVictoria = Color(0xFF2E7D32)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MapaScreen(
     viewModel: MapaViewModel,
-    onNodoClick: (Int) -> Unit,
+    onNodoClick: (NodoCamino) -> Unit,
     onExamenClick: () -> Unit = {}
 ) {
     val nodos by viewModel.nodos.collectAsState()
     val perfil by viewModel.perfil.collectAsState()
     val progresoDominio by viewModel.progresoDominio.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(nodos) {
         viewModel.cargarProgresoDominio()
     }
 
@@ -81,11 +92,10 @@ fun MapaScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(end = 16.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(ColorOro)
+                            .background(ColorOro, RoundedCornerShape(12.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text(text = "Racha: ${perfil?.rachaDias ?: 0} d  ", fontSize = 14.sp)
+                        Text(text = "🔥 ${perfil?.rachaDias ?: 0}  ", fontSize = 14.sp)
                         Text(
                             text = "${perfil?.puntos ?: 0} XP",
                             fontSize = 14.sp,
@@ -103,38 +113,47 @@ fun MapaScreen(
                 .background(ColorPergaminoFondo)
                 .padding(paddingValues)
         ) {
+            val nodosPorTema = nodos.groupBy { it.temaId }
+            val nodoActivoId = nodos.firstOrNull { it.estaDesbloqueado && !it.estaCompletado }?.id
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Cabecera del Curso Actual
-                item {
-                    val primerNodoId = nodos.firstOrNull { it.estaDesbloqueado }?.id ?: 1
-                    EncabezadoCurso(
-                        tituloCurso = "Módulo I: Ecuaciones Cuadráticas",
-                        onClick = { onNodoClick(primerNodoId) }
-                    )
-                }
-
-                itemsIndexed(items = nodos, key = { _, nodo -> nodo.id }) { index, nodo ->
-                    // Calculamos el desplazamienzo horizontal para crear el camino en serpiente/zigzag
-                    val offsetX = when (index % 4) {
-                        0 -> 0.dp
-                        1 -> 60.dp
-                        2 -> 0.dp
-                        3 -> (-60).dp
-                        else -> 0.dp
+                nodosPorTema.forEach { (temaId, nodosTema) ->
+                    item(key = "unidad_$temaId") {
+                        val nombreTema = if (temaId == 0) "⚔️ Batalla Final ⚔️"
+                            else "Unidad $temaId: ${BancoEjercicios.nombreTema(temaId)}"
+                        EncabezadoUnidad(nombreTema)
                     }
 
-                    NodoMedievalItem(
-                        nodo = nodo,
-                        offsetX = offsetX,
-                        esUltimo = index == nodos.size - 1,
-                        onNodoClick = onNodoClick,
-                        progresoDominio = progresoDominio[nodo.id] ?: 0
-                    )
+                    itemsIndexed(
+                        items = nodosTema,
+                        key = { _, nodo -> nodo.id }
+                    ) { index, nodo ->
+                        val offsetX = when (index % 4) {
+                            0 -> 0.dp
+                            1 -> 60.dp
+                            2 -> 0.dp
+                            3 -> (-60).dp
+                            else -> 0.dp
+                        }
+
+                        NodoEntradaAnimada {
+                            NodoMedievalItem(
+                                nodo = nodo,
+                                offsetX = offsetX,
+                                esUltimo = index == nodosTema.size - 1 &&
+                                    temaId == nodosPorTema.keys.maxOrNull(),
+                                esActivo = nodo.id == nodoActivoId,
+                                onNodoClick = onNodoClick,
+                                progresoDominio = progresoDominio[nodo.id] ?: 0,
+                                modifier = Modifier.animateItem()
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -142,71 +161,33 @@ fun MapaScreen(
 }
 
 @Composable
-fun EncabezadoCurso(tituloCurso: String, onClick: () -> Unit) {
-    val numero = tituloCurso.substringBefore(":")
-    val subtitulo = tituloCurso.substringAfter(":").trim()
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 12.dp)
+private fun NodoEntradaAnimada(content: @Composable () -> Unit) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 3 }
     ) {
-        Surface(
-            shape = CircleShape,
-            color = ColorMaderaOscura,
-            shadowElevation = 12.dp,
-            border = BorderStroke(4.dp, ColorOro),
-            modifier = Modifier
-                .size(120.dp)
-                .clickable(onClick = onClick)
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.15f),
-                                Color.Transparent
-                            ),
-                            radius = 0.6f,
-                            center = Offset(0.3f, 0.3f)
-                        ),
-                        shape = CircleShape
-                    )
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = numero,
-                        color = ColorOro,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = ColorOro,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        }
+        content()
+    }
+}
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Surface(
-            color = ColorMaderaOscura,
-            shape = RoundedCornerShape(8.dp),
-            shadowElevation = 4.dp
-        ) {
-            Text(
-                text = subtitulo,
-                color = ColorOro,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-            )
-        }
+@Composable
+fun EncabezadoUnidad(nombreTema: String) {
+    Surface(
+        color = ColorMaderaOscura,
+        shape = RoundedCornerShape(12.dp),
+        shadowElevation = 6.dp,
+        border = BorderStroke(2.dp, ColorOro),
+        modifier = Modifier.padding(top = 16.dp, bottom = 12.dp)
+    ) {
+        Text(
+            text = nombreTema,
+            color = ColorOro,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+        )
     }
 }
 
@@ -215,8 +196,10 @@ fun NodoMedievalItem(
     nodo: NodoCamino,
     offsetX: androidx.compose.ui.unit.Dp,
     esUltimo: Boolean,
-    onNodoClick: (Int) -> Unit,
-    progresoDominio: Int = 0
+    esActivo: Boolean,
+    onNodoClick: (NodoCamino) -> Unit,
+    progresoDominio: Int = 0,
+    modifier: Modifier = Modifier
 ) {
     val backgroundColor = when {
         nodo.estaCompletado -> ColorVerdeVictoria
@@ -225,14 +208,27 @@ fun NodoMedievalItem(
     }
 
     val borderColor = when {
-        nodo.estaCompletado -> ColorOro
-        nodo.estaDesbloqueado -> ColorOro
+        nodo.estaCompletado || nodo.estaDesbloqueado -> ColorOro
         else -> Color.DarkGray
     }
 
+    // Pulso en el nodo activo (siguiente a completar)
+    val escalaPulso = if (esActivo) {
+        val transicion = rememberInfiniteTransition(label = "pulso")
+        transicion.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(700),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulsoNodo"
+        ).value
+    } else 1f
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .offset(x = offsetX)
             .padding(vertical = 8.dp)
@@ -245,8 +241,9 @@ fun NodoMedievalItem(
             border = BorderStroke(4.dp, borderColor),
             modifier = Modifier
                 .size(80.dp)
+                .scale(escalaPulso)
                 .clickable(enabled = nodo.estaDesbloqueado) {
-                    onNodoClick(nodo.id)
+                    onNodoClick(nodo)
                 }
         ) {
             Box(
@@ -266,26 +263,34 @@ fun NodoMedievalItem(
                     )
             ) {
                 when {
-                nodo.estaCompletado -> Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Completado",
-                    tint = ColorOro,
-                    modifier = Modifier.size(36.dp)
-                )
-                nodo.estaDesbloqueado -> Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Disponible",
-                    tint = ColorOro,
-                    modifier = Modifier.size(36.dp)
-                )
-                else -> Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Bloqueado",
-                    tint = Color.LightGray,
-                    modifier = Modifier.size(30.dp)
-                )
+                    nodo.estaCompletado -> Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Completado",
+                        tint = ColorOro,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    nodo.estaDesbloqueado -> when (nodo.tipo) {
+                        BancoEjercicios.TIPO_APLICADO ->
+                            Text("🐉", fontSize = 34.sp)
+                        BancoEjercicios.TIPO_BOSS ->
+                            Text("💀", fontSize = 34.sp)
+                        BancoEjercicios.TIPO_BOSS_FINAL ->
+                            Text("👑", fontSize = 34.sp)
+                        else -> Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Disponible",
+                            tint = ColorOro,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    else -> Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Bloqueado",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
             }
-        }
         }
 
         Spacer(modifier = Modifier.height(6.dp))

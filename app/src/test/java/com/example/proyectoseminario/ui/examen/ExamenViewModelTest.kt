@@ -1,5 +1,6 @@
 package com.example.proyectoseminario.ui.examen
 
+import com.example.proyectoseminario.data.local.BancoEjercicios
 import com.example.proyectoseminario.repository.MapaRepository
 import com.example.proyectoseminario.utils.MainDispatcherRule
 import io.mockk.coVerify
@@ -68,6 +69,7 @@ class ExamenViewModelTest {
         assertEquals(100, resultado?.porcentaje)
         assertEquals(3, resultado?.nivelSugerido)
         coVerify { repository.actualizarNivelActual(3) }
-        coVerify { repository.desbloquearNodosHasta(3) }
+        // nivel 3 desbloquea los nodos de 3 temas completos (3 x 6 = 18)
+        coVerify { repository.desbloquearNodosHasta(3 * BancoEjercicios.NODOS_POR_TEMA) }
     }
 }

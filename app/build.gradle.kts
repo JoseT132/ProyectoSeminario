@@ -5,6 +5,11 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// google-services.json es opcional hasta que se configure el proyecto Firebase
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.example.proyectoseminario"
     compileSdk = 34
@@ -69,6 +74,14 @@ dependencies {
 
     // Hash seguro de contraseñas con BCrypt
     implementation(libs.jbcrypt)
+
+    // Firebase Auth + Google Sign-In
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
 
     testImplementation(libs.junit)
     testImplementation("androidx.test:core:1.5.0")

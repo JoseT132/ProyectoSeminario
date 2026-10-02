@@ -10,10 +10,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 sealed class BottomNavItem(
     val route: String,
     val title: String,
-    val icon: ImageVector
+    val icon: ImageVector? = null,
+    val emoji: String? = null
 ) {
-    object Mapa : BottomNavItem("mapa", "Mapa", Icons.Default.Home)
-    object Logros : BottomNavItem("logros", "Logros", Icons.Default.Star)
-    object Perfil : BottomNavItem("perfil", "Perfil", Icons.Default.Person)
-    object Ajustes : BottomNavItem("ajustes", "Ajustes", Icons.Default.Settings)
+    object Mapa : BottomNavItem("mapa", "Mapa", icon = Icons.Default.Home)
+    object Desafios : BottomNavItem("desafios", "Desafíos", emoji = "🐉")
+    object Logros : BottomNavItem("logros", "Logros", icon = Icons.Default.Star)
+    object Perfil : BottomNavItem("perfil", "Perfil", icon = Icons.Default.Person)
+    object Ajustes : BottomNavItem("ajustes", "Ajustes", icon = Icons.Default.Settings)
 }

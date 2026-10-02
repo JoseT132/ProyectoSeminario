@@ -1,5 +1,6 @@
 package com.example.proyectoseminario.ui.ejercicio
 
+import com.example.proyectoseminario.data.local.BancoEjercicios
 import com.example.proyectoseminario.data.local.Ejercicio
 import com.example.proyectoseminario.repository.MapaRepository
 import com.example.proyectoseminario.utils.MainDispatcherRule
@@ -44,8 +45,10 @@ class EjercicioViewModelTest {
     }
 
     @Test
-    fun `cargar ejercicios actualiza uiState`() = runTest {
-        coEvery { repository.obtenerEjerciciosPorNodo(1) } returns listOf(ejercicio)
+    fun `cargar ejercicios pide una sesion de 5 y actualiza uiState`() = runTest {
+        coEvery {
+            repository.obtenerEjerciciosSesion(1, BancoEjercicios.EJERCICIOS_POR_SESION)
+        } returns listOf(ejercicio)
 
         viewModel.cargarEjercicios(1)
 
@@ -54,12 +57,12 @@ class EjercicioViewModelTest {
         assertEquals(1, state.ejercicios.size)
         assertEquals(1, state.nodoId)
         assertNotNull(state.ejercicioActual)
-        assertEquals(1, state.dificultadActual)
+        coVerify { repository.obtenerEjerciciosSesion(1, 5) }
     }
 
     @Test
     fun `seleccionar y verificar respuesta correcta`() = runTest {
-        coEvery { repository.obtenerEjerciciosPorNodo(1) } returns listOf(ejercicio)
+        coEvery { repository.obtenerEjerciciosSesion(any(), any()) } returns listOf(ejercicio)
         viewModel.cargarEjercicios(1)
 
         viewModel.seleccionarOpcion(1)
@@ -67,14 +70,15 @@ class EjercicioViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals(true, state.esCorrecto)
+        assertEquals(1, state.aciertos)
         coVerify { repository.guardarRespuesta(1, any(), true, any()) }
     }
 
     @Test
-    fun `siguiente avanza solo si la respuesta es correcta`() = runTest {
-        coEvery { repository.obtenerEjerciciosPorNodo(1) } returns listOf(
+    fun `siguiente avanza al siguiente ejercicio`() = runTest {
+        coEvery { repository.obtenerEjerciciosSesion(any(), any()) } returns listOf(
             ejercicio,
-            ejercicio.copy(id = 2, dificultad = 2, respuestaCorrecta = 0)
+            ejercicio.copy(id = 2, respuestaCorrecta = 0)
         )
         viewModel.cargarEjercicios(1)
 
@@ -83,27 +87,57 @@ class EjercicioViewModelTest {
         viewModel.siguiente()
 
         val state = viewModel.uiState.value
+        assertEquals(1, state.indiceActual)
         assertEquals(1, state.aciertos)
-        assertEquals(2, state.dificultadActual)
+        assertNull(state.esCorrecto)
+        assertNull(state.opcionSeleccionada)
     }
 
     @Test
-    fun `respuesta incorrecta no suma aciertos`() = runTest {
-        coEvery { repository.obtenerEjerciciosPorNodo(1) } returns listOf(ejercicio)
+    fun `al terminar la sesion se finaliza y domina con 4 de 5 aciertos`() = runTest {
+        val cinco = (1..5).map { ejercicio.copy(id = it) }
+        coEvery { repository.obtenerEjerciciosSesion(any(), any()) } returns cinco
         viewModel.cargarEjercicios(1)
 
-        viewModel.seleccionarOpcion(0)
-        viewModel.verificarRespuesta()
-        viewModel.siguiente()
+        repeat(5) {
+            viewModel.seleccionarOpcion(1)
+            viewModel.verificarRespuesta()
+            viewModel.siguiente()
+        }
 
         val state = viewModel.uiState.value
-        assertEquals(0, state.aciertos)
-        assertEquals(1, state.dificultadActual)
+        assertTrue(state.finalizado)
+        assertTrue(state.dominioAlcanzado)
+        assertEquals(5, state.aciertos)
     }
 
     @Test
-    fun `reiniciar vuelve al primer ejercicio`() = runTest {
-        coEvery { repository.obtenerEjerciciosPorNodo(1) } returns listOf(ejercicio)
+    fun `sesion fallida con menos de 4 aciertos no domina`() = runTest {
+        val cinco = (1..5).map { ejercicio.copy(id = it) }
+        coEvery { repository.obtenerEjerciciosSesion(any(), any()) } returns cinco
+        viewModel.cargarEjercicios(1)
+
+        // 2 correctas, 3 incorrectas
+        repeat(2) {
+            viewModel.seleccionarOpcion(1)
+            viewModel.verificarRespuesta()
+            viewModel.siguiente()
+        }
+        repeat(3) {
+            viewModel.seleccionarOpcion(0)
+            viewModel.verificarRespuesta()
+            viewModel.siguiente()
+        }
+
+        val state = viewModel.uiState.value
+        assertTrue(state.finalizado)
+        assertFalse(state.dominioAlcanzado)
+        assertEquals(2, state.aciertos)
+    }
+
+    @Test
+    fun `reiniciar vuelve al primer ejercicio con sesion nueva`() = runTest {
+        coEvery { repository.obtenerEjerciciosSesion(any(), any()) } returns listOf(ejercicio)
         viewModel.cargarEjercicios(1)
         viewModel.seleccionarOpcion(1)
         viewModel.verificarRespuesta()
@@ -112,8 +146,10 @@ class EjercicioViewModelTest {
         viewModel.reiniciar()
 
         val state = viewModel.uiState.value
+        assertEquals(0, state.indiceActual)
         assertEquals(0, state.aciertos)
         assertEquals(0, state.respondidas)
         assertNull(state.esCorrecto)
+        assertFalse(state.finalizado)
     }
 }

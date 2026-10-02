@@ -1,6 +1,13 @@
 package com.example.proyectoseminario.ui.ejercicio
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +27,7 @@ import com.example.proyectoseminario.ui.components.LoadingContent
 @Composable
 fun EjercicioScreen(
     viewModel: EjercicioViewModel,
+    tituloNivel: String = "Lección",
     onSiguienteEjercicio: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -31,17 +39,10 @@ fun EjercicioScreen(
         return
     }
 
-    if (ejercicioActual == null) {
+    if (ejercicioActual == null && !state.finalizado) {
         EmptyContent(message = "No hay ejercicios disponibles para este nivel.")
         return
     }
-
-    val opciones = listOf(
-        ejercicioActual.opcionA,
-        ejercicioActual.opcionB,
-        ejercicioActual.opcionC,
-        ejercicioActual.opcionD
-    )
 
     Scaffold { paddingValues ->
         Column(
@@ -58,59 +59,91 @@ fun EjercicioScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = state.progreso,
+                    text = "$tituloNivel · ${state.progreso}",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                Text(
-                    text = ejercicioActual.enunciado,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 24.dp)
+                val progresoAnimado by animateFloatAsState(
+                    targetValue = state.progresoFraccion,
+                    label = "progresoLeccion"
+                )
+                LinearProgressIndicator(
+                    progress = { progresoAnimado },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .padding(bottom = 16.dp),
                 )
 
-                opciones.forEachIndexed { index, opcion ->
-                    val containerColor = when {
-                        state.esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFFC8E6C9)
-                        state.esCorrecto == false && index == state.opcionSeleccionada -> Color(0xFFFFCDD2)
-                        state.opcionSeleccionada == index -> MaterialTheme.colorScheme.primaryContainer
-                        else -> Color.Transparent
-                    }
-
-                    val contentColor = when {
-                        state.esCorrecto != null && index == ejercicioActual.respuestaCorrecta -> Color(0xFF1B5E20)
-                        state.esCorrecto == false && index == state.opcionSeleccionada -> Color(0xFFB71C1C)
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            if (state.esCorrecto == null) {
-                                viewModel.seleccionarOpcion(index)
-                                mostrarExplicacion = false
-                            }
+                if (ejercicioActual != null) {
+                    AnimatedContent(
+                        targetState = ejercicioActual,
+                        transitionSpec = {
+                            (slideInHorizontally { it } + fadeIn())
+                                .togetherWith(slideOutHorizontally { -it } + fadeOut())
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = containerColor,
-                            contentColor = contentColor
-                        )
-                    ) {
-                        Text(
-                            text = opcion,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(8.dp)
-                        )
+                        label = "pregunta"
+                    ) { ejercicio ->
+                        Column {
+                            Text(
+                                text = ejercicio.enunciado,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 24.dp)
+                            )
+
+                            val opciones = listOf(
+                                ejercicio.opcionA,
+                                ejercicio.opcionB,
+                                ejercicio.opcionC,
+                                ejercicio.opcionD
+                            )
+
+                            opciones.forEachIndexed { index, opcion ->
+                                val containerColor = when {
+                                    state.esCorrecto != null && index == ejercicio.respuestaCorrecta -> Color(0xFFC8E6C9)
+                                    state.esCorrecto == false && index == state.opcionSeleccionada -> Color(0xFFFFCDD2)
+                                    state.opcionSeleccionada == index -> MaterialTheme.colorScheme.primaryContainer
+                                    else -> Color.Transparent
+                                }
+
+                                val contentColor = when {
+                                    state.esCorrecto != null && index == ejercicio.respuestaCorrecta -> Color(0xFF1B5E20)
+                                    state.esCorrecto == false && index == state.opcionSeleccionada -> Color(0xFFB71C1C)
+                                    else -> MaterialTheme.colorScheme.onSurface
+                                }
+
+                                OutlinedButton(
+                                    onClick = {
+                                        if (state.esCorrecto == null) {
+                                            viewModel.seleccionarOpcion(index)
+                                            mostrarExplicacion = false
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = containerColor,
+                                        contentColor = contentColor
+                                    )
+                                ) {
+                                    Text(
+                                        text = opcion,
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.padding(8.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             Column {
-                AnimatedVisibility(visible = state.esCorrecto == true) {
+                AnimatedVisibility(visible = state.esCorrecto == true && !state.finalizado) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -126,7 +159,7 @@ fun EjercicioScreen(
                                 fontSize = 18.sp
                             )
                             Text(
-                                text = "Has dominado este ejercicio.",
+                                text = "Aciertos: ${state.aciertos} de ${state.total}",
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
@@ -134,7 +167,7 @@ fun EjercicioScreen(
                     }
                 }
 
-                AnimatedVisibility(visible = state.esCorrecto == false) {
+                AnimatedVisibility(visible = state.esCorrecto == false && !state.finalizado) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -150,7 +183,7 @@ fun EjercicioScreen(
                                 fontSize = 18.sp
                             )
                             Text(
-                                text = "Sigue practicando para alcanzar el 80% de dominio.",
+                                text = "Necesitas al menos 4 aciertos de 5 para aprobar.",
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
@@ -167,7 +200,7 @@ fun EjercicioScreen(
                                 )
                             }
 
-                            if (mostrarExplicacion) {
+                            if (mostrarExplicacion && ejercicioActual != null) {
                                 Text(
                                     text = ejercicioActual.explicacion,
                                     color = Color.White,
@@ -195,7 +228,7 @@ fun EjercicioScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = if (state.dominioAlcanzado)
-                                    "¡Módulo dominado!"
+                                    "¡Lección dominada!"
                                 else
                                     "Dominio insuficiente",
                                 color = Color.White,
@@ -204,9 +237,9 @@ fun EjercicioScreen(
                             )
                             Text(
                                 text = if (state.dominioAlcanzado)
-                                    "Alcanzaste al menos el 80% correcto. Puedes continuar."
+                                    "Lograste ${state.aciertos} de ${state.total} aciertos. ¡Sigue adelante!"
                                 else
-                                    "Necesitas al menos 80% correcto para desbloquear el siguiente módulo.",
+                                    "Lograste ${state.aciertos} de ${state.total}. Necesitas al menos 4 aciertos para continuar.",
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
@@ -236,9 +269,9 @@ fun EjercicioScreen(
                 ) {
                     Text(
                         text = when {
-                            state.esCorrecto == null -> "Comprobar"
                             state.finalizado && state.dominioAlcanzado -> "Continuar"
-                            state.finalizado && !state.dominioAlcanzado -> "Repetir módulo"
+                            state.finalizado && !state.dominioAlcanzado -> "Repetir lección"
+                            state.esCorrecto == null -> "Comprobar"
                             else -> "Siguiente"
                         },
                         fontSize = 16.sp

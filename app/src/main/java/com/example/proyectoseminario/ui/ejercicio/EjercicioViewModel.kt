@@ -2,6 +2,7 @@ package com.example.proyectoseminario.ui.ejercicio
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.proyectoseminario.data.local.BancoEjercicios
 import com.example.proyectoseminario.data.local.Ejercicio
 import com.example.proyectoseminario.repository.MapaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,15 +20,13 @@ class EjercicioViewModel(
     fun cargarEjercicios(nodoId: Int) {
         _uiState.value = EjercicioUiState(isLoading = true)
         viewModelScope.launch {
-            val ejercicios = mapaRepository.obtenerEjerciciosPorNodo(nodoId)
-            val primerEjercicio = ejercicios
-                .filter { it.dificultad == 1 }
-                .minByOrNull { it.id }
-            val ruta = if (primerEjercicio != null) listOf(primerEjercicio) else emptyList()
+            val sesion = mapaRepository.obtenerEjerciciosSesion(
+                nodoId,
+                BancoEjercicios.EJERCICIOS_POR_SESION
+            )
             _uiState.value = EjercicioUiState(
                 isLoading = false,
-                ejercicios = ejercicios,
-                ruta = ruta,
+                ejercicios = sesion,
                 nodoId = nodoId,
                 tiempoInicio = System.currentTimeMillis()
             )
@@ -60,46 +59,26 @@ class EjercicioViewModel(
 
         _uiState.value = state.copy(
             esCorrecto = correcta,
+            aciertos = if (correcta) state.aciertos + 1 else state.aciertos,
+            respondidas = state.respondidas + 1,
             tiempoSegundos = tiempoSegundos
         )
     }
 
     fun siguiente() {
         val state = _uiState.value
-        val respondidas = state.respondidas + 1
-        val dificultad = siguienteDificultad(state)
-        val esCorrecto = state.esCorrecto == true
+        val siguienteIndice = state.indiceActual + 1
 
-        if (esCorrecto && state.aciertos + 1 >= META_PREGUNTAS) {
-            val aciertos = state.aciertos + 1
-            val dominio = if (respondidas > 0) (aciertos * 100) / respondidas else 0
+        if (siguienteIndice >= state.ejercicios.size) {
             _uiState.value = state.copy(
-                aciertos = aciertos,
-                respondidas = respondidas,
-                dominioAlcanzado = dominio >= 80,
-                finalizado = true
+                finalizado = true,
+                dominioAlcanzado = state.aciertos >= ACIERTOS_PARA_APROBAR
             )
             return
         }
 
-        val siguienteEjercicio = state.ejercicios
-            .filter { it.dificultad == dificultad && it.id != (state.ejercicioActual?.id ?: -1) }
-            .minByOrNull { it.id }
-            ?: state.ejercicios.find { it.dificultad == dificultad }
-            ?: state.ejercicios.lastOrNull()
-
-        val nuevaRuta = if (esCorrecto) {
-            (if (siguienteEjercicio != null) state.ruta + siguienteEjercicio else state.ruta)
-        } else {
-            if (siguienteEjercicio != null) state.ruta.dropLast(1) + siguienteEjercicio else state.ruta
-        }
-
         _uiState.value = state.copy(
-            ruta = nuevaRuta,
-            indiceActual = nuevaRuta.size - 1,
-            aciertos = if (esCorrecto) state.aciertos + 1 else state.aciertos,
-            respondidas = respondidas,
-            dificultadActual = dificultad,
+            indiceActual = siguienteIndice,
             opcionSeleccionada = null,
             esCorrecto = null,
             tiempoInicio = System.currentTimeMillis(),
@@ -109,41 +88,30 @@ class EjercicioViewModel(
 
     fun reiniciar() {
         val state = _uiState.value
-        val primerEjercicio = state.ejercicios
-            .filter { it.dificultad == 1 }
-            .minByOrNull { it.id }
-        val ruta = if (primerEjercicio != null) listOf(primerEjercicio) else emptyList()
-        _uiState.value = EjercicioUiState(
-            isLoading = false,
-            ejercicios = state.ejercicios,
-            ruta = ruta,
-            nodoId = state.nodoId,
-            tiempoInicio = System.currentTimeMillis()
-        )
-    }
-
-    private fun siguienteDificultad(state: EjercicioUiState): Int {
-        val esCorrecto = state.esCorrecto ?: return 1
-        val tiempo = state.tiempoSegundos
-        val actual = state.dificultadActual
-        return when {
-            esCorrecto && tiempo <= 10 -> (actual + 1).coerceAtMost(20)
-            esCorrecto -> actual
-            else -> (actual - 1).coerceAtLeast(1)
+        _uiState.value = EjercicioUiState(isLoading = true)
+        viewModelScope.launch {
+            val sesion = mapaRepository.obtenerEjerciciosSesion(
+                state.nodoId,
+                BancoEjercicios.EJERCICIOS_POR_SESION
+            )
+            _uiState.value = EjercicioUiState(
+                isLoading = false,
+                ejercicios = sesion,
+                nodoId = state.nodoId,
+                tiempoInicio = System.currentTimeMillis()
+            )
         }
     }
 
     companion object {
-        const val META_PREGUNTAS = 20
+        const val ACIERTOS_PARA_APROBAR = 4 // 4 de 5 = 80%
     }
 
     data class EjercicioUiState(
         val isLoading: Boolean = false,
         val ejercicios: List<Ejercicio> = emptyList(),
-        val ruta: List<Ejercicio> = emptyList(),
         val nodoId: Int = 0,
         val indiceActual: Int = 0,
-        val dificultadActual: Int = 1,
         val opcionSeleccionada: Int? = null,
         val esCorrecto: Boolean? = null,
         val tiempoSegundos: Int = 0,
@@ -153,7 +121,10 @@ class EjercicioViewModel(
         val finalizado: Boolean = false,
         val dominioAlcanzado: Boolean = false
     ) {
-        val ejercicioActual: Ejercicio? get() = ruta.getOrNull(indiceActual)
-        val progreso: String get() = "Pregunta ${aciertos + 1} de $META_PREGUNTAS · Dificultad $dificultadActual"
+        val ejercicioActual: Ejercicio? get() = ejercicios.getOrNull(indiceActual)
+        val total: Int get() = ejercicios.size
+        val progreso: String get() = "Ejercicio ${indiceActual + 1} de $total"
+        val progresoFraccion: Float get() =
+            if (total > 0) respondidas.toFloat() / total.toFloat() else 0f
     }
 }

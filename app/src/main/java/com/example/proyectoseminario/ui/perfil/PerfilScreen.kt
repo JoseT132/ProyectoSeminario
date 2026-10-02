@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -148,8 +149,9 @@ fun PerfilScreen(
                     )
                 }
 
+                    val context = LocalContext.current
                     Button(
-                    onClick = { viewModel.cerrarSesion(onLogout) },
+                    onClick = { viewModel.cerrarSesion(context, onLogout) },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer

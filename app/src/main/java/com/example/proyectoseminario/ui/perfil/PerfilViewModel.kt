@@ -6,8 +6,10 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.MapaRepository
+import com.example.proyectoseminario.utils.GoogleSignInHelper
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -72,8 +74,9 @@ class PerfilViewModel(
         initialValue = PerfilUiState()
     )
 
-    fun cerrarSesion(onLogoutComplete: () -> Unit) {
+    fun cerrarSesion(context: Context, onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
+            GoogleSignInHelper.cerrarSesion(context)
             sessionManager.clearSession()
             onLogoutComplete()
         }

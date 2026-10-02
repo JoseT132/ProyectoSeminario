@@ -106,6 +106,34 @@ class RegistroViewModel(
         }
     }
 
+    fun iniciarSesionConGoogle(idToken: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+            val result = authRepository.iniciarSesionConGoogle(idToken)
+
+            _uiState.value = _uiState.value.copy(isLoading = false)
+
+            result.fold(
+                onSuccess = { perfil ->
+                    sessionManager.saveSession(
+                        userId = perfil.id,
+                        email = perfil.correo,
+                        name = perfil.nombre
+                    )
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(error = error.message)
+                }
+            )
+        }
+    }
+
+    fun mostrarError(mensaje: String) {
+        _uiState.value = _uiState.value.copy(error = mensaje)
+    }
+
     data class RegistroUiState(
         val nombre: String = "",
         val correo: String = "",

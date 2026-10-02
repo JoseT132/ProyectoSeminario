@@ -15,5 +15,6 @@ data class Ejercicio(
     val opcionD: String,
     val respuestaCorrecta: Int,   // Índice 0, 1, 2 o 3
     val dificultad: Int,          // Nivel 1 (Fácil), 2 (Medio), 3 (Díficil)
-    val explicacion: String       // Paso a paso pedagógico para cuando falle
+    val explicacion: String,      // Paso a paso pedagógico para cuando falle
+    val tipo: String = "normal"   // "normal", "aplicado", "boss"
 )

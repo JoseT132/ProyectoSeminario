@@ -2,6 +2,7 @@ package com.example.proyectoseminario.ui.examen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.proyectoseminario.data.local.BancoEjercicios
 import com.example.proyectoseminario.repository.MapaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,7 +57,7 @@ class ExamenViewModel(
 
         viewModelScope.launch {
             repository.actualizarNivelActual(nivelSugerido)
-            repository.desbloquearNodosHasta(nivelSugerido)
+            repository.desbloquearNodosHasta(nivelSugerido * BancoEjercicios.NODOS_POR_TEMA)
         }
 
         _uiState.value = _uiState.value.copy(

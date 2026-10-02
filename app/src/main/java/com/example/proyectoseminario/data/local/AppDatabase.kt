@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.firstOrNull
         Ejercicio::class,
         RegistroRespuesta::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

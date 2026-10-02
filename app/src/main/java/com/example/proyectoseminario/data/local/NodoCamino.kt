@@ -13,5 +13,7 @@ data class NodoCamino(
     val nivelOrden: Int,       // Posición en el mapa
     val estaDesbloqueado: Boolean = false,
     val estaCompletado: Boolean = false,
-    val nodoPrerrequisitoId: Int? = null // Para la lógica de retroceder o bloquear
+    val nodoPrerrequisitoId: Int? = null, // Para la lógica de retroceder o bloquear
+    val tipo: String = "leccion", // "leccion", "aplicado", "boss", "boss_final"
+    val temaId: Int = 0          // Tema/unidad al que pertenece (0 = nodo global)
 )

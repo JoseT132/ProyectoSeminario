@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">ProyectoSeminario</string>
+
+    <!--
+        REEMPLAZAR con el "Web client ID" (OAuth 2.0, tipo "Aplicación web")
+        de tu proyecto Firebase → Configuración del proyecto → Tus apps.
+        Es el mismo client_id que aparece en google-services.json.
+    -->
+    <string name="google_web_client_id">REEMPLAZA_CON_TU_WEB_CLIENT_ID.apps.googleusercontent.com</string>
 </resources>

@@ -22,6 +22,18 @@ class MapaRepository(private val appDao: AppDao) {
         return appDao.getEjerciciosPorNodo(nodoId).firstOrNull() ?: emptyList()
     }
 
+    suspend fun obtenerNodo(id: Int): NodoCamino? = appDao.getNodoPorId(id)
+
+    // Muestra aleatoria del pool del nodo para una sesión/lección
+    suspend fun obtenerEjerciciosSesion(nodoId: Int, cantidad: Int): List<Ejercicio> {
+        return obtenerEjerciciosPorNodo(nodoId).shuffled().take(cantidad)
+    }
+
+    suspend fun sumarPuntos(puntos: Int) {
+        val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
+        appDao.updatePerfil(perfil.copy(puntos = perfil.puntos + puntos))
+    }
+
     suspend fun calcularDominioNodo(nodoId: Int): Int {
         val total = appDao.contarEjerciciosPorNodo(nodoId)
         val correctas = appDao.contarRespuestasCorrectasPorNodo(nodoId)

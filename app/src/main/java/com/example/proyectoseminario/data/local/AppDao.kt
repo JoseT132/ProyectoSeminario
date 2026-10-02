@@ -43,6 +43,9 @@ interface AppDao {
     @Query("SELECT * FROM ejercicios WHERE nodoId = :nodoId")
     fun getEjerciciosPorNodo(nodoId: Int): Flow<List<Ejercicio>>
 
+    @Query("SELECT * FROM nodos_camino WHERE id = :id LIMIT 1")
+    suspend fun getNodoPorId(id: Int): NodoCamino?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEjercicios(ejercicios: List<Ejercicio>)
 

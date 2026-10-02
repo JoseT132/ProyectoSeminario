@@ -29,9 +29,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.AuthRepository
+import com.example.proyectoseminario.utils.GoogleSignInHelper
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +47,7 @@ fun AjustesScreen(
     onAccountDeleted: () -> Unit
 ) {
     val userId by sessionManager.currentUserId.collectAsState(initial = 0)
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -85,6 +88,7 @@ fun AjustesScreen(
             Button(
                 onClick = {
                     scope.launch {
+                        GoogleSignInHelper.cerrarSesion(context)
                         sessionManager.clearSession()
                         onLogout()
                     }
@@ -116,6 +120,7 @@ fun AjustesScreen(
                         onClick = {
                             scope.launch {
                                 if (userId > 0) authRepository.eliminarCuenta(userId)
+                                GoogleSignInHelper.cerrarSesion(context)
                                 sessionManager.clearSession()
                                 showDeleteDialog = false
                                 onAccountDeleted()
