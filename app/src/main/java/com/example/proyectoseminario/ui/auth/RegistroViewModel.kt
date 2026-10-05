@@ -65,6 +65,10 @@ class RegistroViewModel(
                 _uiState.value = state.copy(error = "La fecha de nacimiento es obligatoria")
                 return
             }
+            state.nivelEscolar.isBlank() -> {
+                _uiState.value = state.copy(error = "El nivel escolar es obligatorio")
+                return
+            }
             state.password.length < 6 -> {
                 _uiState.value = state.copy(error = "La contraseña debe tener al menos 6 caracteres")
                 return

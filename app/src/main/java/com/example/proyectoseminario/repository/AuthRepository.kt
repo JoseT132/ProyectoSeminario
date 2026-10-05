@@ -201,10 +201,29 @@ class AuthRepository(
         }
     }
 
-    suspend fun actualizarFechaNacimiento(fecha: String) {
+    suspend fun completarPerfil(fecha: String, nivelEscolar: String) {
         val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
-        appDao.updatePerfil(perfil.copy(fechaNacimiento = fecha))
+        appDao.updatePerfil(perfil.copy(
+            fechaNacimiento = fecha,
+            nivelEscolar = nivelEscolar
+        ))
         syncRepository?.subirProgreso()
+    }
+
+    /**
+     * El usuario retrocedió desde "completar perfil": la cuenta no debe
+     * existir sin fecha ni nivel, así que se borra el perfil a medias y
+     * se cierra la sesión de Firebase para poder elegir otra cuenta.
+     */
+    suspend fun descartarPerfilIncompleto() {
+        val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
+        if (perfil.fechaNacimiento.isBlank() || perfil.nivelEscolar.isBlank()) {
+            perfil.firebaseUid?.let {
+                runCatching { syncRepository?.eliminarProgreso(it) }
+            }
+            appDao.deletePerfil(perfil.id)
+        }
+        Firebase.auth.signOut()
     }
 
     suspend fun perfilExiste(correo: String): Boolean {

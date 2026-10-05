@@ -3,6 +3,7 @@ package com.example.proyectoseminario
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -89,6 +91,7 @@ import com.example.proyectoseminario.ui.perfil.PerfilScreen
 import com.example.proyectoseminario.ui.perfil.PerfilViewModel
 import com.example.proyectoseminario.ui.perfil.PerfilViewModelFactory
 import com.example.proyectoseminario.ui.theme.ProyectoSeminarioTheme
+import com.example.proyectoseminario.utils.GoogleSignInHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -182,13 +185,13 @@ private fun AppNavigation(
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
-    // La sesión solo se guarda cuando el perfil está completo (con fecha).
-    // Sin fecha: va al carrete obligatorio y NO queda logueado.
+    // La sesión solo se guarda cuando el perfil está completo (fecha + nivel).
+    // Incompleto: va al carrete obligatorio y NO queda logueado.
     val onAuthSuccess: (PerfilUsuario) -> Unit = { perfil ->
         scope.launch {
-            if (perfil.fechaNacimiento.isBlank()) {
+            if (perfil.fechaNacimiento.isBlank() || perfil.nivelEscolar.isBlank()) {
                 navController.navigate("completar_perfil") {
-                    popUpTo("login") { inclusive = true }
+                    popUpTo("login")
                 }
             } else {
                 sessionManager.saveSession(perfil.id, perfil.correo, perfil.nombre)
@@ -336,9 +339,23 @@ private fun AppNavigation(
             }
 
             composable("completar_perfil") {
+                val context = LocalContext.current
+
+                // Retroceder aquí = cancelar el registro: se borra la cuenta a
+                // medias y se cierra Firebase para poder elegir otro correo.
+                BackHandler {
+                    scope.launch {
+                        authRepository.descartarPerfilIncompleto()
+                        GoogleSignInHelper.cerrarSesion(context)
+                        navController.popBackStack()
+                    }
+                }
+
                 CompletarPerfilScreen(
                     perfilFlow = mapaRepository.getPerfil(),
-                    onGuardar = { fecha -> authRepository.actualizarFechaNacimiento(fecha) },
+                    onGuardar = { fecha, nivel ->
+                        authRepository.completarPerfil(fecha, nivel)
+                    },
                     onContinuar = {
                         scope.launch {
                             mapaRepository.getPerfil().firstOrNull()?.let { p ->
