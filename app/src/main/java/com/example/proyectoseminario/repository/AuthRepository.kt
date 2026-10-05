@@ -10,7 +10,10 @@ import com.google.firebase.Firebase
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.tasks.await
 
-class AuthRepository(private val appDao: AppDao) {
+class AuthRepository(
+    private val appDao: AppDao,
+    private val syncRepository: SyncRepository? = null
+) {
 
     suspend fun registrarUsuario(
         nombre: String,
@@ -90,6 +93,11 @@ class AuthRepository(private val appDao: AppDao) {
                 )
                 appDao.updatePerfil(perfil)
             }
+
+            // Sincronizar con la nube: restaura progreso previo y asegura el documento.
+            syncRepository?.restaurarProgreso(firebaseUser.uid)
+            syncRepository?.subirProgreso()
+
             return perfil?.let { Result.success(it) }
                 ?: Result.failure(Exception("No se pudo crear el perfil"))
         } catch (e: FirebaseAuthException) {
@@ -170,6 +178,10 @@ class AuthRepository(private val appDao: AppDao) {
                 )
                 appDao.updatePerfil(perfil)
             }
+
+            // Restaurar progreso de la nube (otro dispositivo) y asegurar el documento.
+            syncRepository?.restaurarProgreso(firebaseUser.uid)
+            syncRepository?.subirProgreso()
 
             perfil?.let { Result.success(it) }
                 ?: Result.failure(Exception("No se pudo crear el perfil"))

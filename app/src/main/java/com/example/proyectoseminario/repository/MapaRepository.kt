@@ -8,7 +8,10 @@ import com.example.proyectoseminario.data.local.RegistroRespuesta
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
-class MapaRepository(private val appDao: AppDao) {
+class MapaRepository(
+    private val appDao: AppDao,
+    private val syncRepository: SyncRepository? = null
+) {
 
     fun getTodosLosNodos(): Flow<List<NodoCamino>> = appDao.getTodosLosNodos()
 
@@ -32,6 +35,7 @@ class MapaRepository(private val appDao: AppDao) {
     suspend fun sumarPuntos(puntos: Int) {
         val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
         appDao.updatePerfil(perfil.copy(puntos = perfil.puntos + puntos))
+        syncRepository?.subirProgreso()
     }
 
     suspend fun calcularDominioNodo(nodoId: Int): Int {
@@ -53,11 +57,13 @@ class MapaRepository(private val appDao: AppDao) {
     suspend fun actualizarRachaDias(rachaDias: Int) {
         val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
         appDao.updatePerfil(perfil.copy(rachaDias = rachaDias))
+        syncRepository?.subirProgreso()
     }
 
     suspend fun actualizarNivelActual(nivel: Int) {
         val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
         appDao.updatePerfil(perfil.copy(nivelActual = nivel))
+        syncRepository?.subirProgreso()
     }
 
     suspend fun desbloquearNodosHasta(nivel: Int) {
@@ -67,6 +73,7 @@ class MapaRepository(private val appDao: AppDao) {
                 appDao.updateNodo(nodo.copy(estaDesbloqueado = true))
             }
         }
+        syncRepository?.subirProgreso()
     }
 
     suspend fun completarNodoYDesbloquearSiguiente(nodoActualId: Int, puntosGanados: Int = 10) {
@@ -88,6 +95,8 @@ class MapaRepository(private val appDao: AppDao) {
                 val perfilActualizado = perfilActual.copy(puntos = perfilActual.puntos + puntosGanados)
                 appDao.updatePerfil(perfilActualizado)
             }
+
+            syncRepository?.subirProgreso()
         }
     }
 }

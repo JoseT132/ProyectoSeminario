@@ -61,6 +61,7 @@ import com.example.proyectoseminario.data.local.BancoEjercicios
 import com.example.proyectoseminario.data.local.NodoCamino
 import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.AuthRepository
+import com.example.proyectoseminario.repository.SyncRepository
 import com.example.proyectoseminario.repository.MapaRepository
 import com.example.proyectoseminario.ui.ajustes.AjustesScreen
 import com.example.proyectoseminario.ui.auth.LoginScreen
@@ -96,8 +97,9 @@ class MainActivity : ComponentActivity() {
 
         val database = AppDatabase.getDatabase(this)
         val appDao = database.appDao()
-        val mapaRepository = MapaRepository(appDao)
-        val authRepository = AuthRepository(appDao)
+        val syncRepository = SyncRepository(appDao)
+        val mapaRepository = MapaRepository(appDao, syncRepository)
+        val authRepository = AuthRepository(appDao, syncRepository)
         val sessionManager = SessionManager(this)
 
         lifecycleScope.launch(Dispatchers.IO) {
