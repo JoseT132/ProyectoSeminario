@@ -66,6 +66,7 @@ import com.example.proyectoseminario.repository.MapaRepository
 import com.example.proyectoseminario.ui.ajustes.AjustesScreen
 import com.example.proyectoseminario.ui.auth.LoginScreen
 import com.example.proyectoseminario.ui.auth.LoginViewModel
+import com.example.proyectoseminario.ui.auth.CompletarPerfilScreen
 import com.example.proyectoseminario.ui.auth.RecuperacionScreen
 import com.example.proyectoseminario.ui.auth.RegistroScreen
 import com.example.proyectoseminario.ui.auth.RegistroViewModel
@@ -301,7 +302,7 @@ private fun AppNavigation(
                 LoginScreen(
                     viewModel = loginViewModel,
                     onLoginSuccess = {
-                        navController.navigate(BottomNavItem.Mapa.route) {
+                        navController.navigate("completar_perfil") {
                             popUpTo("login") { inclusive = true }
                         }
                     },
@@ -314,11 +315,23 @@ private fun AppNavigation(
                 RegistroScreen(
                     viewModel = registroViewModel,
                     onRegisterSuccess = {
-                        navController.navigate(BottomNavItem.Mapa.route) {
+                        navController.navigate("completar_perfil") {
                             popUpTo("login") { inclusive = true }
                         }
                     },
                     onBackToLogin = { navController.popBackStack() }
+                )
+            }
+
+            composable("completar_perfil") {
+                CompletarPerfilScreen(
+                    perfilFlow = mapaRepository.getPerfil(),
+                    onGuardar = { fecha -> authRepository.actualizarFechaNacimiento(fecha) },
+                    onContinuar = {
+                        navController.navigate(BottomNavItem.Mapa.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
                 )
             }
 

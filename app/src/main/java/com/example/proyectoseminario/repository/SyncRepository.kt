@@ -35,6 +35,7 @@ class SyncRepository(private val appDao: AppDao) {
         val datos = mapOf(
             "nombre" to perfil.nombre,
             "correo" to perfil.correo,
+            "fechaNacimiento" to perfil.fechaNacimiento,
             "puntos" to perfil.puntos,
             "rachaDias" to perfil.rachaDias,
             "nivelActual" to perfil.nivelActual,
@@ -65,6 +66,8 @@ class SyncRepository(private val appDao: AppDao) {
             if (perfil != null) {
                 appDao.updatePerfil(
                     perfil.copy(
+                        fechaNacimiento = doc.getString("fechaNacimiento")
+                            ?.ifBlank { null } ?: perfil.fechaNacimiento,
                         puntos = (doc.getLong("puntos") ?: 0).toInt(),
                         rachaDias = (doc.getLong("rachaDias") ?: 0).toInt(),
                         nivelActual = (doc.getLong("nivelActual") ?: 1).toInt(),

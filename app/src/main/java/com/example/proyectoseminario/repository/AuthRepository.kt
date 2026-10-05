@@ -201,6 +201,12 @@ class AuthRepository(
         }
     }
 
+    suspend fun actualizarFechaNacimiento(fecha: String) {
+        val perfil = appDao.getPrimerPerfil().firstOrNull() ?: return
+        appDao.updatePerfil(perfil.copy(fechaNacimiento = fecha))
+        syncRepository?.subirProgreso()
+    }
+
     suspend fun perfilExiste(correo: String): Boolean {
         return appDao.existeCorreo(correo) > 0
     }
