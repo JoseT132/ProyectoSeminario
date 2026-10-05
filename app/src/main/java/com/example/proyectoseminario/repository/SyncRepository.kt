@@ -26,13 +26,19 @@ class SyncRepository(private val appDao: AppDao) {
 
         val nodos = appDao.getTodosLosNodos().firstOrNull() ?: emptyList()
 
+        // precisionGeneral no se persiste en Room: se calcula en vivo desde
+        // registro_respuestas. Se computa aquí para que la nube muestre el real.
+        val totalRespuestas = appDao.getTotalRespuestas().firstOrNull() ?: 0
+        val correctas = appDao.getTotalRespuestasCorrectas().firstOrNull() ?: 0
+        val precision = if (totalRespuestas > 0) correctas.toDouble() * 100 / totalRespuestas else 0.0
+
         val datos = mapOf(
             "nombre" to perfil.nombre,
             "correo" to perfil.correo,
             "puntos" to perfil.puntos,
             "rachaDias" to perfil.rachaDias,
             "nivelActual" to perfil.nivelActual,
-            "precisionGeneral" to perfil.precisionGeneral.toDouble(),
+            "precisionGeneral" to precision,
             "nodosCompletados" to nodos.filter { it.estaCompletado }.map { it.id },
             "nodosDesbloqueados" to nodos.filter { it.estaDesbloqueado }.map { it.id },
             "ultimaSync" to System.currentTimeMillis()
