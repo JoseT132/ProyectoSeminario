@@ -97,10 +97,5 @@ fun CompletarPerfilScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(onClick = onContinuar, enabled = !guardando) {
-            Text("Omitir por ahora")
-        }
     }
 }
