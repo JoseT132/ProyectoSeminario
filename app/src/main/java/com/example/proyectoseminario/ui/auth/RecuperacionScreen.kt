@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,15 +17,19 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.proyectoseminario.utils.SecurityUtils
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecuperacionScreen(
-    onBackToLogin: () -> Unit
+    onBackToLogin: () -> Unit,
+    onEnviar: suspend (String) -> Result<Unit>
 ) {
+    val scope = rememberCoroutineScope()
     var correo by remember { mutableStateOf("") }
     var mensaje by remember { mutableStateOf<String?>(null) }
     var esError by remember { mutableStateOf(false) }
+    var enviando by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -48,7 +53,7 @@ fun RecuperacionScreen(
             )
 
             Text(
-                text = "Ingresa tu correo registrado. En una versión con backend, te enviaremos un enlace para restablecer tu contraseña.",
+                text = "Ingresa tu correo registrado y te enviaremos un enlace para restablecer tu contraseña.",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
@@ -81,19 +86,42 @@ fun RecuperacionScreen(
 
             Button(
                 onClick = {
-                    if (!SecurityUtils.isValidEmail(correo.trim())) {
+                    val correoLimpio = correo.trim()
+                    if (!SecurityUtils.isValidEmail(correoLimpio)) {
                         mensaje = "El correo no tiene un formato válido"
                         esError = true
-                    } else {
-                        mensaje = "Si el correo está registrado, revisa tu bandeja de instrucciones (simulado)."
-                        esError = false
+                        return@Button
+                    }
+                    scope.launch {
+                        enviando = true
+                        mensaje = null
+                        onEnviar(correoLimpio).fold(
+                            onSuccess = {
+                                mensaje = "Listo. Revisa tu bandeja de entrada y sigue el enlace para restablecer tu contraseña."
+                                esError = false
+                            },
+                            onFailure = { error ->
+                                mensaje = error.message ?: "No se pudo enviar el correo"
+                                esError = true
+                            }
+                        )
+                        enviando = false
                     }
                 },
+                enabled = !enviando,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                Text("Enviar instrucciones")
+                if (enviando) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Enviar instrucciones")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

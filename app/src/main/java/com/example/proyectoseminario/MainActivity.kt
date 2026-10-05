@@ -322,7 +322,8 @@ private fun AppNavigation(
 
             composable("recuperacion") {
                 RecuperacionScreen(
-                    onBackToLogin = { navController.popBackStack() }
+                    onBackToLogin = { navController.popBackStack() },
+                    onEnviar = { correo -> authRepository.enviarCorreoRecuperacion(correo) }
                 )
             }
 

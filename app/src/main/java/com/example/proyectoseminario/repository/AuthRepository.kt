@@ -3,6 +3,7 @@ package com.example.proyectoseminario.repository
 import com.example.proyectoseminario.data.local.AppDao
 import com.example.proyectoseminario.data.local.PerfilUsuario
 import com.example.proyectoseminario.utils.SecurityUtils
+import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.Firebase
@@ -27,10 +28,22 @@ class AuthRepository(private val appDao: AppDao) {
             return Result.failure(Exception("Ya existe una cuenta con este correo"))
         }
 
+        // Registro dual: el usuario también se crea en Firebase Auth para poder
+        // enviarle el correo de restablecimiento de contraseña.
+        var firebaseUid: String? = null
+        try {
+            firebaseUid = Firebase.auth
+                .createUserWithEmailAndPassword(correo, password).await()
+                .user?.uid
+        } catch (_: Exception) {
+            // Sin conexión o el correo ya existe en Firebase: se crea solo local.
+        }
+
         val perfil = PerfilUsuario(
             nombre = nombre,
             correo = correo,
             passwordHash = SecurityUtils.hashPassword(password),
+            firebaseUid = firebaseUid,
             fechaNacimiento = fechaNacimiento,
             nivelEscolar = nivelEscolar
         )
@@ -44,18 +57,84 @@ class AuthRepository(private val appDao: AppDao) {
             return Result.failure(Exception("El correo no tiene un formato válido"))
         }
 
-        val perfil = appDao.getPerfilPorCorreo(correo)
-            ?: return Result.failure(Exception("No existe una cuenta con este correo"))
-
-        if (perfil.proveedorAuth == "google" || perfil.passwordHash.isBlank()) {
+        val perfilLocal = appDao.getPerfilPorCorreo(correo)
+        if (perfilLocal != null &&
+            (perfilLocal.proveedorAuth == "google" || perfilLocal.passwordHash.isBlank())
+        ) {
             return Result.failure(Exception("Esta cuenta usa Google. Inicia con 'Continuar con Google'"))
         }
+
+        // Primero Firebase: necesario para que una contraseña restablecida por
+        // correo funcione aunque el hash local todavía sea el antiguo.
+        try {
+            val firebaseUser = Firebase.auth
+                .signInWithEmailAndPassword(correo, password).await().user
+                ?: return Result.failure(Exception("No se pudo iniciar sesión"))
+
+            var perfil = perfilLocal
+            if (perfil == null) {
+                appDao.insertPerfil(
+                    PerfilUsuario(
+                        nombre = firebaseUser.displayName ?: correo.substringBefore("@"),
+                        correo = correo,
+                        passwordHash = SecurityUtils.hashPassword(password),
+                        firebaseUid = firebaseUser.uid
+                    )
+                )
+                perfil = appDao.getPerfilPorCorreo(correo)
+            } else {
+                // Resincroniza el hash local con la contraseña actual de Firebase
+                perfil = perfil.copy(
+                    passwordHash = SecurityUtils.hashPassword(password),
+                    firebaseUid = firebaseUser.uid
+                )
+                appDao.updatePerfil(perfil)
+            }
+            return perfil?.let { Result.success(it) }
+                ?: Result.failure(Exception("No se pudo crear el perfil"))
+        } catch (e: FirebaseAuthException) {
+            // La cuenta ya existía en Firebase pero la contraseña no coincide:
+            // Firebase es autoritativo, no caer al respaldo local.
+            if (e.errorCode == "ERROR_INVALID_LOGIN_CREDENTIALS" && perfilLocal?.firebaseUid != null) {
+                return Result.failure(Exception("Contraseña incorrecta"))
+            }
+            // Cuenta solo local o error de red: continuar con verificación local.
+        } catch (_: Exception) {
+            // Sin conexión: continuar con verificación local.
+        }
+
+        val perfil = perfilLocal
+            ?: return Result.failure(Exception("No existe una cuenta con este correo"))
 
         if (!SecurityUtils.verifyPassword(password, perfil.passwordHash)) {
             return Result.failure(Exception("Contraseña incorrecta"))
         }
 
         return Result.success(perfil)
+    }
+
+    /**
+     * Envía el correo de restablecimiento de contraseña de Firebase Auth.
+     * Solo funciona para cuentas registradas también en Firebase.
+     */
+    suspend fun enviarCorreoRecuperacion(correo: String): Result<Unit> {
+        if (!SecurityUtils.isValidEmail(correo)) {
+            return Result.failure(Exception("El correo no tiene un formato válido"))
+        }
+        return try {
+            Firebase.auth.sendPasswordResetEmail(correo).await()
+            Result.success(Unit)
+        } catch (e: FirebaseAuthException) {
+            val mensaje = when (e.errorCode) {
+                "ERROR_USER_NOT_FOUND", "ERROR_INVALID_LOGIN_CREDENTIALS" ->
+                    "No existe una cuenta registrada con este correo"
+                "ERROR_INVALID_EMAIL" -> "El correo no tiene un formato válido"
+                else -> "No se pudo enviar el correo de recuperación"
+            }
+            Result.failure(Exception(mensaje))
+        } catch (_: Exception) {
+            Result.failure(Exception("Sin conexión. Verifica tu internet e inténtalo de nuevo"))
+        }
     }
 
     /**
