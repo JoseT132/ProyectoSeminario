@@ -88,4 +88,13 @@ class SyncRepository(private val appDao: AppDao) {
             false
         }
     }
+
+    /** Elimina el documento de progreso en la nube (al borrar la cuenta). */
+    suspend fun eliminarProgreso(uid: String) {
+        try {
+            usuarios.document(uid).delete().await()
+        } catch (_: Exception) {
+            // Sin conexión: el doc queda; el usuario puede borrarlo desde la consola.
+        }
+    }
 }

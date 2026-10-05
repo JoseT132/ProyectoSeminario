@@ -101,10 +101,21 @@ class AuthRepository(
             return perfil?.let { Result.success(it) }
                 ?: Result.failure(Exception("No se pudo crear el perfil"))
         } catch (e: FirebaseAuthException) {
-            // La cuenta ya existía en Firebase pero la contraseña no coincide:
-            // Firebase es autoritativo, no caer al respaldo local.
-            if (e.errorCode == "ERROR_INVALID_LOGIN_CREDENTIALS" && perfilLocal?.firebaseUid != null) {
-                return Result.failure(Exception("Contraseña incorrecta"))
+            when (e.errorCode) {
+                // Cuenta deshabilitada o eliminada desde la consola: bloquear y
+                // limpiar el perfil local si estaba vinculada a Firebase.
+                "ERROR_USER_DISABLED" ->
+                    return Result.failure(Exception("Esta cuenta está deshabilitada. Contacta al administrador"))
+                "ERROR_USER_NOT_FOUND", "ERROR_USER_DELETED" -> {
+                    perfilLocal?.firebaseUid?.let { appDao.deletePerfil(perfilLocal.id) }
+                    return Result.failure(Exception("Esta cuenta fue eliminada"))
+                }
+                // La cuenta existe en Firebase pero la contraseña no coincide:
+                // Firebase es autoritativo, no caer al respaldo local.
+                "ERROR_INVALID_LOGIN_CREDENTIALS" ->
+                    if (perfilLocal?.firebaseUid != null) {
+                        return Result.failure(Exception("Contraseña incorrecta"))
+                    }
             }
             // Cuenta solo local o error de red: continuar con verificación local.
         } catch (_: Exception) {
@@ -194,7 +205,30 @@ class AuthRepository(
         return appDao.existeCorreo(correo) > 0
     }
 
+    /**
+     * Elimina la cuenta completa: perfil local, documento de progreso en
+     * Firestore y usuario de Firebase Auth.
+     */
     suspend fun eliminarCuenta(id: Int) {
+        val perfil = appDao.getPrimerPerfil().firstOrNull()
+        val uid = perfil?.firebaseUid ?: Firebase.auth.currentUser?.uid
+
         appDao.deletePerfil(id)
+
+        uid?.let { syncRepository?.eliminarProgreso(it) }
+
+        try {
+            val actual = Firebase.auth.currentUser
+            if (actual != null && (uid == null || actual.uid == uid)) {
+                actual.delete().await()
+            }
+        } catch (_: Exception) {
+            // Requiere login reciente: el perfil local ya se borró; el usuario
+            // de Firebase puede eliminarse desde la consola.
+        }
+        try {
+            Firebase.auth.signOut()
+        } catch (_: Exception) {
+        }
     }
 }
