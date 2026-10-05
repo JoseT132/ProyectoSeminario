@@ -122,9 +122,9 @@ fun LoginScreen(
                             onSuccess = { idToken ->
                                 viewModel.iniciarSesionConGoogle(idToken, onLoginSuccess)
                             },
-                            onFailure = {
+                            onFailure = { error ->
                                 viewModel.mostrarError(
-                                    "Google Sign-In no disponible. Configura Firebase (google-services.json y Web Client ID)."
+                                    "Google Sign-In falló: ${error.message ?: error.javaClass.simpleName}"
                                 )
                             }
                         )
