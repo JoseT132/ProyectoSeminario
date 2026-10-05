@@ -69,7 +69,7 @@ class ExamenViewModelTest {
         assertEquals(100, resultado?.porcentaje)
         assertEquals(3, resultado?.nivelSugerido)
         coVerify { repository.actualizarNivelActual(3) }
-        // nivel 3 desbloquea los nodos de 3 temas completos (3 x 6 = 18)
-        coVerify { repository.desbloquearNodosHasta(3 * BancoEjercicios.NODOS_POR_TEMA) }
+        // 100% -> desbloquea los 2 primeros temas (2 x 6 = 12 nodos)
+        coVerify { repository.desbloquearNodosHasta(2 * BancoEjercicios.NODOS_POR_TEMA) }
     }
 }

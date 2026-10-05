@@ -55,9 +55,17 @@ class ExamenViewModel(
             else -> 1
         }
 
+        // Nodos a desbloquear según resultado:
+        // <50% -> solo Lección 1 | 50-79% -> Tema 1 (6 nodos) | >=80% -> Temas 1 y 2 (12 nodos)
+        val nodosADesbloquear = when (nivelSugerido) {
+            3 -> 2 * BancoEjercicios.NODOS_POR_TEMA
+            2 -> BancoEjercicios.NODOS_POR_TEMA
+            else -> 1
+        }
+
         viewModelScope.launch {
             repository.actualizarNivelActual(nivelSugerido)
-            repository.desbloquearNodosHasta(nivelSugerido * BancoEjercicios.NODOS_POR_TEMA)
+            repository.desbloquearNodosHasta(nodosADesbloquear)
         }
 
         _uiState.value = _uiState.value.copy(
