@@ -3,7 +3,6 @@ package com.example.proyectoseminario.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyectoseminario.data.local.PerfilUsuario
-import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,8 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val authRepository: AuthRepository,
-    private val sessionManager: SessionManager
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -26,7 +24,7 @@ class LoginViewModel(
         _uiState.value = _uiState.value.copy(password = password)
     }
 
-    fun iniciarSesion(onSuccess: () -> Unit) {
+    fun iniciarSesion(onSuccess: (PerfilUsuario) -> Unit) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
@@ -38,14 +36,7 @@ class LoginViewModel(
             _uiState.value = _uiState.value.copy(isLoading = false)
 
             result.fold(
-                onSuccess = { perfil ->
-                    sessionManager.saveSession(
-                        userId = perfil.id,
-                        email = perfil.correo ?: "",
-                        name = perfil.nombre
-                    )
-                    onSuccess()
-                },
+                onSuccess = { perfil -> onSuccess(perfil) },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(error = error.message)
                 }
@@ -53,7 +44,7 @@ class LoginViewModel(
         }
     }
 
-    fun iniciarSesionConGoogle(idToken: String, onSuccess: () -> Unit) {
+    fun iniciarSesionConGoogle(idToken: String, onSuccess: (PerfilUsuario) -> Unit) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
@@ -62,14 +53,7 @@ class LoginViewModel(
             _uiState.value = _uiState.value.copy(isLoading = false)
 
             result.fold(
-                onSuccess = { perfil ->
-                    sessionManager.saveSession(
-                        userId = perfil.id,
-                        email = perfil.correo,
-                        name = perfil.nombre
-                    )
-                    onSuccess()
-                },
+                onSuccess = { perfil -> onSuccess(perfil) },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(error = error.message)
                 }

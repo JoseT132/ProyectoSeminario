@@ -33,11 +33,20 @@ fun CompletarPerfilScreen(
     val scope = rememberCoroutineScope()
     var fechaSeleccionada by remember { mutableStateOf("") }
     var guardando by remember { mutableStateOf(false) }
+    var continuado by remember { mutableStateOf(false) }
+
+    // Evita navegar dos veces: el botón y el LaunchedEffect pueden disparar juntos.
+    val continuarUnaVez: () -> Unit = {
+        if (!continuado) {
+            continuado = true
+            onContinuar()
+        }
+    }
 
     // Si ya tiene fecha, no hay nada que completar: ir directo al mapa.
     LaunchedEffect(perfil?.fechaNacimiento) {
         if (perfil != null && perfil!!.fechaNacimiento.isNotBlank()) {
-            onContinuar()
+            continuarUnaVez()
         }
     }
 
@@ -78,7 +87,7 @@ fun CompletarPerfilScreen(
                     guardando = true
                     onGuardar(fechaSeleccionada)
                     guardando = false
-                    onContinuar()
+                    continuarUnaVez()
                 }
             },
             enabled = !guardando && fechaSeleccionada.isNotBlank(),

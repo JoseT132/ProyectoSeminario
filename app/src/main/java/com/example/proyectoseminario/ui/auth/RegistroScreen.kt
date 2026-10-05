@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.proyectoseminario.data.local.PerfilUsuario
 import com.example.proyectoseminario.ui.components.SelectorFecha
 import com.example.proyectoseminario.utils.GoogleSignInHelper
 import kotlinx.coroutines.launch
@@ -30,7 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RegistroScreen(
     viewModel: RegistroViewModel,
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: (PerfilUsuario) -> Unit,
     onBackToLogin: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()

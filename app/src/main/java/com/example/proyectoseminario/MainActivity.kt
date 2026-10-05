@@ -35,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,7 @@ import androidx.navigation.navArgument
 import com.example.proyectoseminario.data.local.AppDatabase
 import com.example.proyectoseminario.data.local.BancoEjercicios
 import com.example.proyectoseminario.data.local.NodoCamino
+import com.example.proyectoseminario.data.local.PerfilUsuario
 import com.example.proyectoseminario.data.preferences.SessionManager
 import com.example.proyectoseminario.repository.AuthRepository
 import com.example.proyectoseminario.repository.SyncRepository
@@ -112,8 +114,8 @@ class MainActivity : ComponentActivity() {
         }
 
         val mapaViewModel = viewModelConFactory { MapaViewModel(mapaRepository) }
-        val loginViewModel = viewModelConFactory { LoginViewModel(authRepository, sessionManager) }
-        val registroViewModel = viewModelConFactory { RegistroViewModel(authRepository, sessionManager) }
+        val loginViewModel = viewModelConFactory { LoginViewModel(authRepository) }
+        val registroViewModel = viewModelConFactory { RegistroViewModel(authRepository) }
 
         setContent {
             val isSystemDark = isSystemInDarkTheme()
@@ -178,6 +180,24 @@ private fun AppNavigation(
     onDarkThemeChange: (Boolean) -> Unit
 ) {
     val navController = rememberNavController()
+    val scope = rememberCoroutineScope()
+
+    // La sesión solo se guarda cuando el perfil está completo (con fecha).
+    // Sin fecha: va al carrete obligatorio y NO queda logueado.
+    val onAuthSuccess: (PerfilUsuario) -> Unit = { perfil ->
+        scope.launch {
+            if (perfil.fechaNacimiento.isBlank()) {
+                navController.navigate("completar_perfil") {
+                    popUpTo("login") { inclusive = true }
+                }
+            } else {
+                sessionManager.saveSession(perfil.id, perfil.correo, perfil.nombre)
+                navController.navigate(BottomNavItem.Mapa.route) {
+                    popUpTo("login") { inclusive = true }
+                }
+            }
+        }
+    }
     val navItems = listOf(
         BottomNavItem.Mapa,
         BottomNavItem.Desafios,
@@ -301,11 +321,7 @@ private fun AppNavigation(
             composable("login") {
                 LoginScreen(
                     viewModel = loginViewModel,
-                    onLoginSuccess = {
-                        navController.navigate("completar_perfil") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    },
+                    onLoginSuccess = onAuthSuccess,
                     onNavigateToRegister = { navController.navigate("registro") },
                     onNavigateToRecovery = { navController.navigate("recuperacion") }
                 )
@@ -314,11 +330,7 @@ private fun AppNavigation(
             composable("registro") {
                 RegistroScreen(
                     viewModel = registroViewModel,
-                    onRegisterSuccess = {
-                        navController.navigate("completar_perfil") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    },
+                    onRegisterSuccess = onAuthSuccess,
                     onBackToLogin = { navController.popBackStack() }
                 )
             }
@@ -328,8 +340,13 @@ private fun AppNavigation(
                     perfilFlow = mapaRepository.getPerfil(),
                     onGuardar = { fecha -> authRepository.actualizarFechaNacimiento(fecha) },
                     onContinuar = {
-                        navController.navigate(BottomNavItem.Mapa.route) {
-                            popUpTo(0) { inclusive = true }
+                        scope.launch {
+                            mapaRepository.getPerfil().firstOrNull()?.let { p ->
+                                sessionManager.saveSession(p.id, p.correo, p.nombre)
+                            }
+                            navController.navigate(BottomNavItem.Mapa.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
                     }
                 )
