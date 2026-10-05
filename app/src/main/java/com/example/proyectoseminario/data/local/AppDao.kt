@@ -65,4 +65,7 @@ interface AppDao {
     @Query("SELECT COUNT(DISTINCT ejercicioId) FROM registro_respuestas WHERE nodoId = :nodoId AND esCorrecto = 1")
     suspend fun contarRespuestasCorrectasPorNodo(nodoId: Int): Int
 
+    @Query("DELETE FROM registro_respuestas")
+    suspend fun borrarRegistrosRespuestas()
+
 }

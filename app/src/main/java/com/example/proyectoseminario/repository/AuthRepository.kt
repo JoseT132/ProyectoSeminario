@@ -212,14 +212,27 @@ class AuthRepository(
     }
 
     /**
-     * Elimina la cuenta completa: perfil local, documento de progreso en
-     * Firestore y usuario de Firebase Auth.
+     * Elimina la cuenta completa: perfil local, progreso del mapa, historial
+     * de respuestas, documento en Firestore y usuario de Firebase Auth.
      */
     suspend fun eliminarCuenta(id: Int) {
         val perfil = appDao.getPrimerPerfil().firstOrNull()
         val uid = perfil?.firebaseUid ?: Firebase.auth.currentUser?.uid
 
         appDao.deletePerfil(id)
+        appDao.borrarRegistrosRespuestas()
+
+        // Reiniciar el mapa: los nodos son globales, no por usuario — sin esto
+        // el progreso del usuario borrado quedaría para la siguiente cuenta.
+        appDao.getTodosLosNodos().firstOrNull()?.forEach { nodo ->
+            val desbloqueadoInicial = nodo.id == 1
+            if (nodo.estaCompletado || nodo.estaDesbloqueado != desbloqueadoInicial) {
+                appDao.updateNodo(nodo.copy(
+                    estaCompletado = false,
+                    estaDesbloqueado = desbloqueadoInicial
+                ))
+            }
+        }
 
         uid?.let { syncRepository?.eliminarProgreso(it) }
 
