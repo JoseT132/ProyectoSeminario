@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "620655073399",
+    "project_id": "proyectoseminario-bd108",
+    "storage_bucket": "proyectoseminario-bd108.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:620655073399:android:5016fa437187aa5817ce72",
+        "android_client_info": {
+          "package_name": "com.example.proyectoseminario"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCohxcpq3jfNEIpQRAcDIHTmYlBFJ4h6Q4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

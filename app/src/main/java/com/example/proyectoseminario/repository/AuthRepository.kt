@@ -4,8 +4,8 @@ import com.example.proyectoseminario.data.local.AppDao
 import com.example.proyectoseminario.data.local.PerfilUsuario
 import com.example.proyectoseminario.utils.SecurityUtils
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.Firebase
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.tasks.await
 
