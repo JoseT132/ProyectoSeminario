@@ -12,7 +12,20 @@
           "package_name": "com.example.proyectoseminario"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "620655073399-2i7bbtb0vtm7pggjpa03876k5139jkv5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.proyectoseminario",
+            "certificate_hash": "a9cbf01fc1b68593951ee1e98440c1ee2ed46e32"
+          }
+        },
+        {
+          "client_id": "620655073399-rpm9l41f60rmivt78g190cdm4br19ef8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCohxcpq3jfNEIpQRAcDIHTmYlBFJ4h6Q4"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "620655073399-rpm9l41f60rmivt78g190cdm4br19ef8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
